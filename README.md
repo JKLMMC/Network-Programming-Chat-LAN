@@ -10,7 +10,7 @@
 | 2 | [Trần Minh Trí] | [070206000427 ] | [@tritm0427-eng] |  |
 | 3 | [Nguyễn Trần Phương Huệ] | [052306005343] | [@phwghuje] |  |
 | 4 | [Lê Thị Lan Hương] | [052306007313] | [@Huong-19] |  |
-| 5 | [Tên thành viên 5] | [MSSV] | [@github_id_5] |  |
+| 5 | [Nguyễn Anh Khoa] | [060206002198] | [@JKLMMC] |  |
 | 6 | [Tên thành viên 6] | [MSSV] | [@github_id_6] |  |
 
 ---
