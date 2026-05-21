@@ -6,12 +6,12 @@
 
 | STT | Họ và Tên | Mã số sinh viên | Tài khoản GitHub (ID) | Phân công nhiệm vụ (Giai đoạn 1) |
 | :---: | :--- | :---: | :--- | :--- |
-| 1 | [Tên anh - Nhóm trưởng] | [MSSV] | [@github_id_cua_anh] | Thiết lập Server TCP & Database |
-| 2 | [Tên thành viên 2] | [MSSV] | [@github_id_2] | Thiết kế CSDL SQLite & luồng dữ liệu |
-| 3 | [Tên thành viên 3] | [MSSV] | [@github_id_3] | Xây dựng UI Tkinter (Admin/Server) |
-| 4 | [Tên thành viên 4] | [MSSV] | [@github_id_4] | Xây dựng UI Tkinter (Client) |
-| 5 | [Tên thành viên 5] | [MSSV] | [@github_id_5] | Xử lý logic mạng tích hợp UI |
-| 6 | [Tên thành viên 6] | [MSSV] | [@github_id_6] | Cấu trúc repo, tài liệu & test mạng |
+| 1 | [Rcom Chiến] | [064205002320] | [@chiemnev] |  |
+| 2 | [Trần Minh Trí] | [070206000427 ] | [@tritm0427-eng] |  |
+| 3 | [Nguyễn Trần Phương Huệ] | [052306005343] | [@phwghuje] |  |
+| 4 | [Lê Thị Lan Hương] | [052306007313] | [@Huong-19] |  |
+| 5 | [Tên thành viên 5] | [MSSV] | [@github_id_5] |  |
+| 6 | [Tên thành viên 6] | [MSSV] | [@github_id_6] |  |
 
 ---
 
