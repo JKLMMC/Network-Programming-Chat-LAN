@@ -6,7 +6,7 @@
 
 | STT | Họ và Tên | Mã số sinh viên | Tài khoản GitHub (ID) | Phân công nhiệm vụ |
 | :---: | :--- | :---: | :--- | :--- |
-| 1 | [Tên anh - Nhóm trưởng] | [MSSV] |
+| 1 | [Tên - Nhóm trưởng] | [MSSV] |
 | 2 | [Tên thành viên 2] | [MSSV] |
 | 3 | [Tên thành viên 3] | [MSSV] |
 | 4 | [Tên thành viên 4] | [MSSV] |
