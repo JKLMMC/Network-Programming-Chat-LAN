@@ -5,7 +5,7 @@
 ##Danh sách thành viên nhóm:
 
 | STT | Họ và Tên | Mã số sinh viên | Tài khoản GitHub (ID) | Phân công nhiệm vụ |
-| :---: | :--- |
+| :---: | :--- | :--- |
 | 1 | [Tên - Nhóm trưởng] | [MSSV] |
 | 2 | [Rcom Chiến] | [064205002320] |
 | 3 | [Tên thành viên 3] | [MSSV] |
