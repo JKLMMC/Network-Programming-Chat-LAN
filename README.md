@@ -4,14 +4,16 @@
 
 ##Danh sách thành viên nhóm:
 
-| STT | Họ và Tên | Mã số sinh viên | Tài khoản GitHub (ID) | Phân công nhiệm vụ |
-| :---: | :--- | :--- |
-| 1 | [Tên - Nhóm trưởng] | [MSSV] |
-| 2 | [Rcom Chiến] | [064205002320] |
-| 3 | [Tên thành viên 3] | [MSSV] |
-| 4 | [Tên thành viên 4] | [MSSV] |
-| 5 | [Tên thành viên 5] | [MSSV] |
-| 6 | [Tên thành viên 6] | [MSSV] |
+| STT | Họ và Tên | Mã số sinh viên | Tài khoản GitHub (ID) | Phân công nhiệm vụ (Giai đoạn 1) |
+| :---: | :--- | :---: | :--- | :--- |
+| 1 | [Tên anh - Nhóm trưởng] | [MSSV] | [@github_id_cua_anh] | Thiết lập Server TCP & Database |
+| 2 | [Tên thành viên 2] | [MSSV] | [@github_id_2] | Thiết kế CSDL SQLite & luồng dữ liệu |
+| 3 | [Tên thành viên 3] | [MSSV] | [@github_id_3] | Xây dựng UI Tkinter (Admin/Server) |
+| 4 | [Tên thành viên 4] | [MSSV] | [@github_id_4] | Xây dựng UI Tkinter (Client) |
+| 5 | [Tên thành viên 5] | [MSSV] | [@github_id_5] | Xử lý logic mạng tích hợp UI |
+| 6 | [Tên thành viên 6] | [MSSV] | [@github_id_6] | Cấu trúc repo, tài liệu & test mạng |
+
+---
 
 #Cấu trúc thư mục (Repository Structure)
 * `Code/`: Chứa toàn bộ mã nguồn Python (Server, Client, Database).
