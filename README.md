@@ -18,7 +18,7 @@
 ---
 
 #Cấu trúc thư mục (Repository Structure)
-* `Code/`: Chứa toàn bộ mã nguồn Python (Server, Client, Database).
+* `Code/`: Chứa toàn bộ mã nguồn C# (Server, Client, Database).
 * `DOCX/`: Chứa các tài liệu đặc tả yêu cầu, báo cáo tiến độ và báo cáo tổng kết.
 * `Extra/`: Chứa hình ảnh demo, kết quả kiểm thử (Stress test mạng) và các tài nguyên phụ trợ khác.
 * `PPTX/`: Chứa slide thuyết trình bảo vệ đồ án.
