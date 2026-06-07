@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\admin\\source\\repos\\Server_Chat\\Server_Chat\\Server_Chat.csproj": {}
+    "C:\\Users\\admin\\source\\repos\\Network-Programming-Chat-LAN\\PPTX\\Code\\Server_Chat\\Server_Chat\\Server_Chat.csproj": {}
   },
   "projects": {
-    "C:\\Users\\admin\\source\\repos\\Server_Chat\\Server_Chat\\Server_Chat.csproj": {
+    "C:\\Users\\admin\\source\\repos\\Network-Programming-Chat-LAN\\PPTX\\Code\\Server_Chat\\Server_Chat\\Server_Chat.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\admin\\source\\repos\\Server_Chat\\Server_Chat\\Server_Chat.csproj",
+        "projectUniqueName": "C:\\Users\\admin\\source\\repos\\Network-Programming-Chat-LAN\\PPTX\\Code\\Server_Chat\\Server_Chat\\Server_Chat.csproj",
         "projectName": "Server_Chat",
-        "projectPath": "C:\\Users\\admin\\source\\repos\\Server_Chat\\Server_Chat\\Server_Chat.csproj",
+        "projectPath": "C:\\Users\\admin\\source\\repos\\Network-Programming-Chat-LAN\\PPTX\\Code\\Server_Chat\\Server_Chat\\Server_Chat.csproj",
         "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\admin\\source\\repos\\Server_Chat\\Server_Chat\\obj\\",
+        "outputPath": "C:\\Users\\admin\\source\\repos\\Network-Programming-Chat-LAN\\PPTX\\Code\\Server_Chat\\Server_Chat\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -45,7 +45,7 @@
           "auditLevel": "low",
           "auditMode": "all"
         },
-        "SdkAnalysisLevel": "10.0.200"
+        "SdkAnalysisLevel": "10.0.300"
       },
       "frameworks": {
         "net10.0-windows": {
@@ -70,7 +70,7 @@
               "privateAssets": "none"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.203/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.300/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",
