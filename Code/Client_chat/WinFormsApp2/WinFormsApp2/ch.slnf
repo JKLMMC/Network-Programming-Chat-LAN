@@ -1,0 +1,8 @@
+{
+  "solution": {
+    "path": "..\\WinFormsApp2.slnx",
+    "projects": [
+      "WinFormsApp2\\WinFormsApp2.csproj"
+    ]
+  }
+}
