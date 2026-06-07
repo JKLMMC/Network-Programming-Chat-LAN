@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -12,6 +13,8 @@ namespace Server_Chat
         private TcpListener server;
         private Thread listenThread;
         private bool isRunning = false;
+        private List<TcpClient> clientList = new List<TcpClient>();
+        private object lockObj = new object();
 
         public Form1()
         {
@@ -56,23 +59,45 @@ namespace Server_Chat
             }
         }
 
-        // Hàm xử lý Eco tin nhắn của Giai đoạn 1
+        // Hàm xử lý tin nhắn (Đã chuyển thành Broadcast cho Giai đoạn 2)
         private void HandleClient(object obj)
         {
             TcpClient client = (TcpClient)obj;
+            lock (lockObj)
+            {
+                clientList.Add(client); // Thêm client vào danh sách quản lý
+            }
+            
             NetworkStream stream = client.GetStream();
-            byte[] bytes = new byte[256];
+            byte[] bytes = new byte[1024]; // Tăng buffer lên 1024 giống Client
             int i;
 
             try
             {
                 while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
                 {
-                    // Dùng UTF8
+                    // Dùng UTF8 để đọc tin nhắn
                     string data = Encoding.UTF8.GetString(bytes, 0, i);
 
-                    byte[] msg = Encoding.UTF8.GetBytes(data.ToUpper());
-                    stream.Write(msg, 0, msg.Length);
+                    // Đóng gói lại thành byte để Broadcast
+                    byte[] msg = Encoding.UTF8.GetBytes(data);
+
+                    // Gửi tin nhắn cho tất cả các Client trong danh sách
+                    lock (lockObj)
+                    {
+                        foreach (TcpClient c in clientList)
+                        {
+                            try
+                            {
+                                NetworkStream cStream = c.GetStream();
+                                cStream.Write(msg, 0, msg.Length);
+                            }
+                            catch
+                            {
+                                // Bỏ qua nếu có lỗi khi ghi đến 1 client nào đó
+                            }
+                        }
+                    }
                 }
             }
             catch
@@ -81,6 +106,10 @@ namespace Server_Chat
             }
             finally
             {
+                lock (lockObj)
+                {
+                    clientList.Remove(client); // Xóa client khỏi danh sách khi thoát
+                }
                 client.Close();
             }
         }

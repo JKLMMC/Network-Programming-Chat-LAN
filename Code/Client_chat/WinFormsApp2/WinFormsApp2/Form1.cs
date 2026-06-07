@@ -28,8 +28,8 @@ namespace WinFormsApp2
                 // 1. Ẩn Form đăng nhập hiện tại đi
                 this.Hide();
 
-                // 2. Tạo và hiển thị Form Chat chính (Đã sửa thêm chữ s)
-                MainChatForms chatForm = new MainChatForms();
+                // 2. Tạo và hiển thị Form Chat chính (Đã truyền tên người dùng vào)
+                MainChatForms chatForm = new MainChatForms(txtUsername.Text);
                 chatForm.ShowDialog();
 
                 // 3. Sau khi đóng Form Chat thì đóng toàn bộ ứng dụng

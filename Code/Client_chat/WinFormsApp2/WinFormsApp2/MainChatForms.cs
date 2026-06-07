@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -15,9 +15,14 @@ namespace WinFormsApp2
         private TcpClient client;
         private NetworkStream stream;
 
-        public MainChatForms()
+        private string username;
+
+        public MainChatForms(string name)
         {
             InitializeComponent();
+            
+            // Lưu tên người dùng
+            username = name;
             
             // Tự động kết nối Server khi mở Form Chat
             ConnectToServer();
@@ -71,7 +76,9 @@ namespace WinFormsApp2
             {
                 if (!string.IsNullOrWhiteSpace(txtMessage.Text) && stream != null)
                 {
-                    byte[] buffer = Encoding.UTF8.GetBytes(txtMessage.Text);
+                    // Nối tên người dùng vào trước tin nhắn
+                    string fullMessage = username + ": " + txtMessage.Text;
+                    byte[] buffer = Encoding.UTF8.GetBytes(fullMessage);
                     stream.Write(buffer, 0, buffer.Length); // Gửi mảng byte lên Server
 
                     txtMessage.Clear(); // Dọn trống ô nhập
