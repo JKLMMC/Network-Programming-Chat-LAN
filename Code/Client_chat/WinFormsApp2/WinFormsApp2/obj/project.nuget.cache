@@ -1,8 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "VD6f/oXONlI=",
+  "dgSpecHash": "kX8nm/qQKIw=",
   "success": true,
-  "projectFilePath": "D:\\Lập Trình Mạng\\PPTX\\Code\\Client_chat\\WinFormsApp2\\WinFormsApp2\\WinFormsApp2.csproj",
-  "expectedPackageFiles": [],
+  "projectFilePath": "/Users/tranminhtri/Documents/Network-Programming-Chat-LAN-1/Code/Client_chat/WinFormsApp2/WinFormsApp2/WinFormsApp2.csproj",
+  "expectedPackageFiles": [
+    "/Users/tranminhtri/.nuget/packages/microsoft.windowsdesktop.app.ref/10.0.9/microsoft.windowsdesktop.app.ref.10.0.9.nupkg.sha512"
+  ],
   "logs": []
 }
