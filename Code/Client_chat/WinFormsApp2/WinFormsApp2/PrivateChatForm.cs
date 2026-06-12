@@ -33,18 +33,17 @@ namespace WinFormsApp2
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
 
-            // Khung hiển thị nội dung chat
+            
             rtxtChat = new RichTextBox { Dock = DockStyle.Top, Height = 290, ReadOnly = true, BackColor = Color.White, Font = new Font("Segoe UI", 10) };
             
-            // Ô nhập tin nhắn
+            
             txtInput = new TextBox { Location = new Point(12, 315), Width = 310, Multiline = true, Height = 50, Font = new Font("Segoe UI", 10) };
             
-            // Nút gửi tin nhắn riêng
+            
             btnSendMsg = new Button { Location = new Point(332, 314), Width = 90, Height = 50, Text = "Gửi", BackColor = SystemColors.Highlight, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
 
             btnSendMsg.Click += BtnSendMsg_Click;
-            this.AcceptButton = btnSendMsg; // Bấm Enter là gửi tin luôn cho tiện
-
+            this.AcceptButton = btnSendMsg; 
             this.Controls.Add(rtxtChat);
             this.Controls.Add(txtInput);
             this.Controls.Add(btnSendMsg);
@@ -58,12 +57,12 @@ namespace WinFormsApp2
                 {
                     string msgText = txtInput.Text.Trim();
                     
-                    // Gửi gói tin lên Server định tuyến: PRIVATE|NguoiGui|NguoiNhan|NoiDung
+                    
                     string packet = $"PRIVATE|{myUsername}|{targetUsername}|{msgText}";
                     byte[] data = Encoding.UTF8.GetBytes(packet);
                     stream.Write(data, 0, data.Length);
 
-                    // Tự in tin nhắn của mình lên khung chat
+                    
                     AppendMessage("Tôi", msgText);
                     txtInput.Clear();
                     txtInput.Focus();
@@ -75,7 +74,7 @@ namespace WinFormsApp2
             }
         }
 
-        // Hàm giúp các file khác ghi đè tin nhắn nhận được vào khung hiển thị
+        
         public void AppendMessage(string sender, string message)
         {
             if (rtxtChat.InvokeRequired)
@@ -86,7 +85,7 @@ namespace WinFormsApp2
             {
                 rtxtChat.AppendText($"{sender}: {message}{Environment.NewLine}");
                 rtxtChat.SelectionStart = rtxtChat.Text.Length;
-                rtxtChat.ScrollToCaret(); // Tự cuộn màn hình xuống tin nhắn mới nhất
+                rtxtChat.ScrollToCaret(); 
             }
         }
     }
