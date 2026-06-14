@@ -22,22 +22,69 @@ namespace WinFormsApp2
 
         private void button1_Click(object sender, EventArgs e)
         {
-            // Kiểm tra nếu người dùng đã nhập tên
-            if (!string.IsNullOrWhiteSpace(txtUsername.Text) && txtUsername.Text != "Nhập tên người dùng...")
+            if (string.IsNullOrWhiteSpace(txtUsername.Text) || string.IsNullOrWhiteSpace(txtPassword.Text))
             {
-                // 1. Ẩn Form đăng nhập hiện tại đi
-                this.Hide();
-
-                // 2. Tạo và hiển thị Form Chat chính (Đã truyền tên người dùng vào)
-                MainChatForms chatForm = new MainChatForms(txtUsername.Text);
-                chatForm.ShowDialog();
-
-                // 3. Sau khi đóng Form Chat thì đóng toàn bộ ứng dụng
-                this.Close();
+                MessageBox.Show("Vui lòng nhập đầy đủ tên và mật khẩu!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
-            else
+
+            // Gửi yêu cầu đăng nhập lên Server
+            if (SendAuthCommand("AUTH:" + txtUsername.Text + ":" + txtPassword.Text, out string response))
             {
-                MessageBox.Show("Vui lòng nhập tên trước khi vào phòng chat!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                if (response == "AUTH_OK")
+                {
+                    this.Hide();
+                    MainChatForms chatForm = new MainChatForms(txtUsername.Text);
+                    chatForm.ShowDialog();
+                    this.Close();
+                }
+                else if (response.StartsWith("AUTH_FAIL:"))
+                {
+                    MessageBox.Show(response.Substring(10), "Đăng nhập thất bại", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        public void lnkRegister_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtUsername.Text) || string.IsNullOrWhiteSpace(txtPassword.Text))
+            {
+                MessageBox.Show("Vui lòng nhập tài khoản và mật khẩu muốn tạo vào các ô trống trước!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // Gửi yêu cầu đăng ký lên Server
+            if (SendAuthCommand("REG:" + txtUsername.Text + ":" + txtPassword.Text, out string response))
+            {
+                if (response == "REG_OK")
+                {
+                    MessageBox.Show("Đăng ký thành công! Bạn có thể nhấn Đăng nhập ngay.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else if (response.StartsWith("REG_FAIL:"))
+                {
+                    MessageBox.Show(response.Substring(9), "Đăng ký thất bại", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private bool SendAuthCommand(string command, out string response)
+        {
+            response = "";
+            try
+            {
+                System.Net.Sockets.TcpClient tempClient = new System.Net.Sockets.TcpClient("127.0.0.1", 8888);
+                System.IO.StreamReader reader = new System.IO.StreamReader(tempClient.GetStream(), System.Text.Encoding.UTF8);
+                System.IO.StreamWriter writer = new System.IO.StreamWriter(tempClient.GetStream(), System.Text.Encoding.UTF8) { AutoFlush = true };
+
+                writer.WriteLine(command);
+                response = reader.ReadLine();
+                tempClient.Close();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Không thể kết nối tới Server: " + ex.Message, "Lỗi mạng", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
             }
         }
     }

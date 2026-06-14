@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data.SQLite;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -13,7 +14,8 @@ namespace Server_Chat
         private TcpListener server;
         private Thread listenThread;
         private bool isRunning = false;
-        private List<TcpClient> clientList = new List<TcpClient>();
+        // Dùng Dictionary để ánh xạ Tên người dùng -> Kết nối TcpClient
+        private Dictionary<string, TcpClient> clientList = new Dictionary<string, TcpClient>();
         private object lockObj = new object();
 
         public Form1()
@@ -26,12 +28,16 @@ namespace Server_Chat
         {
             if (!isRunning)
             {
+                button1.Text = "Server đang chạy...";
+                button1.Refresh(); // Cập nhật chữ trên nút ngay lập tức
+
                 // Mở luồng ngầm để Server chạy mà không làm đơ giao diện
                 listenThread = new Thread(StartServer);
                 listenThread.IsBackground = true;
                 listenThread.Start();
 
-                button1.Text = "Server đang chạy...";
+                Thread.Sleep(500); // Chờ nửa giây tạo cảm giác đang khởi động
+                button1.Text = "Server đã bật"; // Cập nhật lại nút theo yêu cầu
                 button1.Enabled = false;
             }
         }
@@ -59,58 +65,192 @@ namespace Server_Chat
             }
         }
 
-        // Hàm xử lý tin nhắn (Đã chuyển thành Broadcast cho Giai đoạn 2)
+        // Hàm xử lý tin nhắn (Đã nâng cấp StreamReader để đọc file lớn không bị vỡ)
         private void HandleClient(object obj)
         {
             TcpClient client = (TcpClient)obj;
-            lock (lockObj)
-            {
-                clientList.Add(client); // Thêm client vào danh sách quản lý
-            }
-            
+            string clientName = ""; 
             NetworkStream stream = client.GetStream();
-            byte[] bytes = new byte[1024]; // Tăng buffer lên 1024 giống Client
-            int i;
+            
+            // Dùng StreamReader để tự động đọc trọn vẹn 1 dòng (tránh đứt đoạn khi gửi file lớn)
+            System.IO.StreamReader reader = new System.IO.StreamReader(stream, Encoding.UTF8);
+            System.IO.StreamWriter writer = new System.IO.StreamWriter(stream, Encoding.UTF8) { AutoFlush = true };
 
             try
             {
-                while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
+                string data;
+                while ((data = reader.ReadLine()) != null)
                 {
-                    // Dùng UTF8 để đọc tin nhắn
-                    string data = Encoding.UTF8.GetString(bytes, 0, i);
-
-                    // Đóng gói lại thành byte để Broadcast
-                    byte[] msg = Encoding.UTF8.GetBytes(data);
-
-                    // Gửi tin nhắn cho tất cả các Client trong danh sách
-                    lock (lockObj)
+                    // Xử lý theo giao thức đơn giản
+                    if (data.StartsWith("AUTH:")) // Yêu cầu đăng nhập
                     {
-                        foreach (TcpClient c in clientList)
+                        string[] parts = data.Split(':');
+                        if (parts.Length == 3 && CheckLogin(parts[1], parts[2]))
+                            writer.WriteLine("AUTH_OK");
+                        else
+                            writer.WriteLine("AUTH_FAIL:Sai tài khoản hoặc mật khẩu");
+                    }
+                    else if (data.StartsWith("REG:")) // Yêu cầu đăng ký
+                    {
+                        string[] parts = data.Split(':');
+                        if (parts.Length == 3 && RegisterUser(parts[1], parts[2]))
+                            writer.WriteLine("REG_OK");
+                        else
+                            writer.WriteLine("REG_FAIL:Tài khoản đã tồn tại");
+                    }
+                    else if (data.StartsWith("LOGIN:"))
+                    {
+                        clientName = data.Substring(6); 
+                        lock (lockObj)
                         {
-                            try
-                            {
-                                NetworkStream cStream = c.GetStream();
-                                cStream.Write(msg, 0, msg.Length);
-                            }
-                            catch
-                            {
-                                // Bỏ qua nếu có lỗi khi ghi đến 1 client nào đó
-                            }
+                            clientList[clientName] = client; 
+                        }
+                        UpdateUserList(); 
+                    }
+                    else if (data.StartsWith("CHAT:"))
+                    {
+                        string message = data.Substring(5); 
+                        Broadcast("CHAT:" + clientName + ": " + message);
+                    }
+                    else if (data.StartsWith("PRIVATE:"))
+                    {
+                        string[] parts = data.Split(new char[] { ':' }, 3);
+                        if (parts.Length == 3)
+                        {
+                            SendPrivate(clientName, parts[1], parts[2]);
+                        }
+                    }
+                    else if (data.StartsWith("FILE:"))
+                    {
+                        // Cú pháp: FILE:NgườiNhận:TênFile:DữLiệuBase64
+                        string[] parts = data.Split(new char[] { ':' }, 4);
+                        if (parts.Length == 4)
+                        {
+                            string receiver = parts[1];
+                            string fileName = parts[2];
+                            string fileData = parts[3];
+
+                            if (receiver == "Tất cả")
+                                Broadcast("FILE:" + clientName + ":" + fileName + ":" + fileData);
+                            else
+                                SendPrivateFile(clientName, receiver, fileName, fileData);
                         }
                     }
                 }
             }
             catch
             {
-                // Bỏ qua lỗi ngắt kết nối đột ngột
             }
             finally
             {
-                lock (lockObj)
+                if (clientName != "")
                 {
-                    clientList.Remove(client); // Xóa client khỏi danh sách khi thoát
+                    lock (lockObj)
+                    {
+                        clientList.Remove(clientName); 
+                    }
+                    UpdateUserList(); 
                 }
                 client.Close();
+            }
+        }
+
+        // --- CÁC HÀM XỬ LÝ CƠ SỞ DỮ LIỆU ---
+        private bool CheckLogin(string username, string password)
+        {
+            try
+            {
+                using (SQLiteConnection conn = new SQLiteConnection("Data Source=Chat.db;Version=3;"))
+                {
+                    conn.Open();
+                    string sql = "SELECT COUNT(*) FROM Users WHERE Username=@u AND Password=@p";
+                    using (SQLiteCommand cmd = new SQLiteCommand(sql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@u", username);
+                        cmd.Parameters.AddWithValue("@p", password);
+                        return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+                    }
+                }
+            }
+            catch { return false; }
+        }
+
+        private bool RegisterUser(string username, string password)
+        {
+            try
+            {
+                using (SQLiteConnection conn = new SQLiteConnection("Data Source=Chat.db;Version=3;"))
+                {
+                    conn.Open();
+                    string sql = "INSERT INTO Users (Username, Password) VALUES (@u, @p)";
+                    using (SQLiteCommand cmd = new SQLiteCommand(sql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@u", username);
+                        cmd.Parameters.AddWithValue("@p", password);
+                        cmd.ExecuteNonQuery();
+                        return true;
+                    }
+                }
+            }
+            catch { return false; } // Trùng tên
+        }
+
+        // --- CÁC HÀM ĐỊNH TUYẾN ---
+
+        // Hàm gửi danh sách người dùng đang online
+        private void UpdateUserList()
+        {
+            string userList = "LIST:";
+            lock (lockObj)
+            {
+                foreach (string name in clientList.Keys)
+                {
+                    userList += name + ",";
+                }
+            }
+            if (userList.EndsWith(",")) userList = userList.TrimEnd(',');
+            Broadcast(userList);
+        }
+
+        // Hàm gửi tin nhắn cho tất cả mọi người
+        private void Broadcast(string data)
+        {
+            data = data + Environment.NewLine;
+            byte[] msg = Encoding.UTF8.GetBytes(data);
+            lock (lockObj)
+            {
+                foreach (TcpClient c in clientList.Values)
+                {
+                    try { c.GetStream().Write(msg, 0, msg.Length); } catch { }
+                }
+            }
+        }
+
+        private void SendPrivate(string sender, string receiver, string msg)
+        {
+            string formattedMsg = "PRIVATE:[" + sender + " gửi riêng]: " + msg + Environment.NewLine;
+            byte[] bytes = Encoding.UTF8.GetBytes(formattedMsg);
+            
+            lock (lockObj)
+            {
+                if (clientList.ContainsKey(receiver))
+                    try { clientList[receiver].GetStream().Write(bytes, 0, bytes.Length); } catch { }
+                if (clientList.ContainsKey(sender))
+                    try { clientList[sender].GetStream().Write(bytes, 0, bytes.Length); } catch { }
+            }
+        }
+
+        private void SendPrivateFile(string sender, string receiver, string fileName, string fileData)
+        {
+            string formattedMsg = "FILE:" + sender + ":" + fileName + ":" + fileData + Environment.NewLine;
+            byte[] bytes = Encoding.UTF8.GetBytes(formattedMsg);
+            
+            lock (lockObj)
+            {
+                if (clientList.ContainsKey(receiver))
+                    try { clientList[receiver].GetStream().Write(bytes, 0, bytes.Length); } catch { }
+                if (clientList.ContainsKey(sender))
+                    try { clientList[sender].GetStream().Write(bytes, 0, bytes.Length); } catch { }
             }
         }
     }

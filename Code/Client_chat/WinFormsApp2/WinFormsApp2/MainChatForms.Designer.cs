@@ -1,4 +1,4 @@
-﻿namespace WinFormsApp2
+namespace WinFormsApp2
 {
     partial class MainChatForms
     {
@@ -33,6 +33,7 @@
             lstOnlineUsers = new ListBox();
             panel1 = new Panel();
             btnSend = new Button();
+            btnSendFile = new Button();
             txtMessage = new TextBox();
             rtxtChatLog = new RichTextBox();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -83,6 +84,7 @@
             // 
             // panel1
             // 
+            panel1.Controls.Add(btnSendFile);
             panel1.Controls.Add(btnSend);
             panel1.Controls.Add(txtMessage);
             panel1.Dock = DockStyle.Bottom;
@@ -104,7 +106,22 @@
             btnSend.TabIndex = 1;
             btnSend.Text = "Gửi";
             btnSend.UseVisualStyleBackColor = false;
-            btnSend.Click += btnSend_Click; // Liên kết sự kiện bấm nút Gửi thành công
+            btnSend.Click += btnSend_Click;
+            // 
+            // btnSendFile
+            // 
+            btnSendFile.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            btnSendFile.BackColor = Color.ForestGreen;
+            btnSendFile.FlatStyle = FlatStyle.Flat;
+            btnSendFile.Font = new Font("Segoe UI", 10.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            btnSendFile.ForeColor = SystemColors.ButtonHighlight;
+            btnSendFile.Location = new Point(420, 33);
+            btnSendFile.Name = "btnSendFile";
+            btnSendFile.Size = new Size(98, 34);
+            btnSendFile.TabIndex = 2;
+            btnSendFile.Text = "Gửi File";
+            btnSendFile.UseVisualStyleBackColor = false;
+            btnSendFile.Click += new System.EventHandler(this.btnSendFile_Click);
             // 
             // txtMessage
             // 
@@ -112,7 +129,7 @@
             txtMessage.Location = new Point(0, 0);
             txtMessage.Multiline = true;
             txtMessage.Name = "txtMessage";
-            txtMessage.Size = new Size(525, 70);
+            txtMessage.Size = new Size(415, 70);
             txtMessage.TabIndex = 0;
             // 
             // rtxtChatLog
@@ -153,5 +170,6 @@
         private Panel panel1;
         private TextBox txtMessage;
         private Button btnSend;
+        private Button btnSendFile;
     }
 }

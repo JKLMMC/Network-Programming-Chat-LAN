@@ -1,4 +1,4 @@
-﻿namespace WinFormsApp2
+namespace WinFormsApp2
 {
     partial class LoginForm
     {
@@ -120,6 +120,7 @@
             lnkRegister.TabStop = true;
             lnkRegister.Text = "Tạo tài khoản";
             lnkRegister.VisitedLinkColor = Color.FromArgb(0, 120, 212);
+            lnkRegister.LinkClicked += new LinkLabelLinkClickedEventHandler(((LoginForm)this).lnkRegister_LinkClicked);
             // 
             // lnkForgot
             // 
