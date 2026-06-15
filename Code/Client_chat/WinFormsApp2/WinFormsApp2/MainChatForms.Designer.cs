@@ -29,11 +29,10 @@ namespace WinFormsApp2
         private void InitializeComponent()
         {
             splitContainer1 = new SplitContainer();
-            label1 = new Label();
             lstOnlineUsers = new ListBox();
             panel1 = new Panel();
-            btnSend = new Button();
             btnSendFile = new Button();
+            btnSend = new Button();
             txtMessage = new TextBox();
             rtxtChatLog = new RichTextBox();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -51,7 +50,6 @@ namespace WinFormsApp2
             // 
             // splitContainer1.Panel1
             // 
-            splitContainer1.Panel1.Controls.Add(label1);
             splitContainer1.Panel1.Controls.Add(lstOnlineUsers);
             // 
             // splitContainer1.Panel2
@@ -62,17 +60,6 @@ namespace WinFormsApp2
             splitContainer1.SplitterDistance = 310;
             splitContainer1.TabIndex = 0;
             // 
-            // label1
-            // 
-            label1.AutoSize = true;
-            label1.Font = new Font("Segoe UI", 10.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label1.Location = new Point(3, 26);
-            label1.Name = "label1";
-            label1.Size = new Size(172, 25);
-            label1.TabIndex = 1;
-            label1.Text = "Người dùng online";
-            label1.Click += label1_Click;
-            // 
             // lstOnlineUsers
             // 
             lstOnlineUsers.Dock = DockStyle.Fill;
@@ -81,6 +68,8 @@ namespace WinFormsApp2
             lstOnlineUsers.Name = "lstOnlineUsers";
             lstOnlineUsers.Size = new Size(310, 553);
             lstOnlineUsers.TabIndex = 0;
+            lstOnlineUsers.SelectedIndexChanged += lstOnlineUsers_SelectedIndexChanged;
+            lstOnlineUsers.DoubleClick += lstOnlineUsers_DoubleClick;
             // 
             // panel1
             // 
@@ -93,21 +82,6 @@ namespace WinFormsApp2
             panel1.Size = new Size(618, 70);
             panel1.TabIndex = 1;
             // 
-            // btnSend
-            // 
-            btnSend.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            btnSend.BackColor = SystemColors.Highlight;
-            btnSend.FlatStyle = FlatStyle.Flat;
-            btnSend.Font = new Font("Segoe UI", 10.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            btnSend.ForeColor = SystemColors.ButtonHighlight;
-            btnSend.Location = new Point(524, 33);
-            btnSend.Name = "btnSend";
-            btnSend.Size = new Size(94, 34);
-            btnSend.TabIndex = 1;
-            btnSend.Text = "Gửi";
-            btnSend.UseVisualStyleBackColor = false;
-            btnSend.Click += btnSend_Click;
-            // 
             // btnSendFile
             // 
             btnSendFile.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
@@ -115,21 +89,36 @@ namespace WinFormsApp2
             btnSendFile.FlatStyle = FlatStyle.Flat;
             btnSendFile.Font = new Font("Segoe UI", 10.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
             btnSendFile.ForeColor = SystemColors.ButtonHighlight;
-            btnSendFile.Location = new Point(420, 33);
+            btnSendFile.Location = new Point(420, 3);
             btnSendFile.Name = "btnSendFile";
-            btnSendFile.Size = new Size(98, 34);
+            btnSendFile.Size = new Size(98, 64);
             btnSendFile.TabIndex = 2;
             btnSendFile.Text = "Gửi File";
             btnSendFile.UseVisualStyleBackColor = false;
-            btnSendFile.Click += new System.EventHandler(this.btnSendFile_Click);
+            btnSendFile.Click += btnSendFile_Click;
+            // 
+            // btnSend
+            // 
+            btnSend.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            btnSend.BackColor = SystemColors.Highlight;
+            btnSend.FlatStyle = FlatStyle.Flat;
+            btnSend.Font = new Font("Segoe UI", 10.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            btnSend.ForeColor = SystemColors.ButtonHighlight;
+            btnSend.Location = new Point(524, 3);
+            btnSend.Name = "btnSend";
+            btnSend.Size = new Size(94, 64);
+            btnSend.TabIndex = 1;
+            btnSend.Text = "Gửi";
+            btnSend.UseVisualStyleBackColor = false;
+            btnSend.Click += btnSend_Click;
             // 
             // txtMessage
             // 
             txtMessage.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            txtMessage.Location = new Point(0, 0);
+            txtMessage.Location = new Point(10, 3);
             txtMessage.Multiline = true;
             txtMessage.Name = "txtMessage";
-            txtMessage.Size = new Size(415, 70);
+            txtMessage.Size = new Size(404, 64);
             txtMessage.TabIndex = 0;
             // 
             // rtxtChatLog
@@ -152,7 +141,6 @@ namespace WinFormsApp2
             StartPosition = FormStartPosition.CenterScreen;
             Text = "MainChatForms";
             splitContainer1.Panel1.ResumeLayout(false);
-            splitContainer1.Panel1.PerformLayout();
             splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
@@ -164,7 +152,6 @@ namespace WinFormsApp2
         #endregion
 
         private SplitContainer splitContainer1;
-        private Label label1;
         private ListBox lstOnlineUsers;
         private RichTextBox rtxtChatLog;
         private Panel panel1;

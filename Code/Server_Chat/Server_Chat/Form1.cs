@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -21,6 +21,8 @@ namespace Server_Chat
         public Form1()
         {
             InitializeComponent();
+            CheckForIllegalCrossThreadCalls = false;
+            InitializeDatabase();
         }
 
         // Sự kiện khi bấm vào button1 trên giao diện Server
@@ -120,6 +122,22 @@ namespace Server_Chat
                             SendPrivate(clientName, parts[1], parts[2]);
                         }
                     }
+                    else if (data.StartsWith("TYPING:"))
+                    {
+                        // Broadcasst TYPING
+                        Broadcast(data + Environment.NewLine);
+                    }
+                    else if (data.StartsWith("FWD:"))
+                    {
+                        // FWD:Target:OldMsg
+                        string[] parts = data.Split(new char[] { ':' }, 3);
+                        if (parts.Length == 3)
+                        {
+                            string target = parts[1];
+                            string msg = parts[2];
+                            SendPrivate(clientName, target, "[Chuyển tiếp] " + msg);
+                        }
+                    }
                     else if (data.StartsWith("FILE:"))
                     {
                         // Cú pháp: FILE:NgườiNhận:TênFile:DữLiệuBase64
@@ -156,15 +174,38 @@ namespace Server_Chat
         }
 
         // --- CÁC HÀM XỬ LÝ CƠ SỞ DỮ LIỆU ---
+        private void InitializeDatabase()
+        {
+            try
+            {
+                using (SqliteConnection conn = new SqliteConnection("Data Source=Chat.db;"))
+                {
+                    conn.Open();
+                    string sql = @"CREATE TABLE IF NOT EXISTS Users (
+                                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    Username TEXT UNIQUE NOT NULL,
+                                    Password TEXT NOT NULL
+                                  );
+                                  INSERT OR IGNORE INTO Users (Username, Password) VALUES ('test1', '123');
+                                  INSERT OR IGNORE INTO Users (Username, Password) VALUES ('test2', '123');";
+                    using (SqliteCommand cmd = new SqliteCommand(sql, conn))
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch { }
+        }
+
         private bool CheckLogin(string username, string password)
         {
             try
             {
-                using (SQLiteConnection conn = new SQLiteConnection("Data Source=Chat.db;Version=3;"))
+                using (SqliteConnection conn = new SqliteConnection("Data Source=Chat.db;"))
                 {
                     conn.Open();
                     string sql = "SELECT COUNT(*) FROM Users WHERE Username=@u AND Password=@p";
-                    using (SQLiteCommand cmd = new SQLiteCommand(sql, conn))
+                    using (SqliteCommand cmd = new SqliteCommand(sql, conn))
                     {
                         cmd.Parameters.AddWithValue("@u", username);
                         cmd.Parameters.AddWithValue("@p", password);
@@ -179,11 +220,11 @@ namespace Server_Chat
         {
             try
             {
-                using (SQLiteConnection conn = new SQLiteConnection("Data Source=Chat.db;Version=3;"))
+                using (SqliteConnection conn = new SqliteConnection("Data Source=Chat.db;"))
                 {
                     conn.Open();
                     string sql = "INSERT INTO Users (Username, Password) VALUES (@u, @p)";
-                    using (SQLiteCommand cmd = new SQLiteCommand(sql, conn))
+                    using (SqliteCommand cmd = new SqliteCommand(sql, conn))
                     {
                         cmd.Parameters.AddWithValue("@u", username);
                         cmd.Parameters.AddWithValue("@p", password);
@@ -228,15 +269,13 @@ namespace Server_Chat
 
         private void SendPrivate(string sender, string receiver, string msg)
         {
-            string formattedMsg = "PRIVATE:[" + sender + " gửi riêng]: " + msg + Environment.NewLine;
+            string formattedMsg = "PRIVATE_CHAT:" + sender + ":" + msg + Environment.NewLine;
             byte[] bytes = Encoding.UTF8.GetBytes(formattedMsg);
             
             lock (lockObj)
             {
                 if (clientList.ContainsKey(receiver))
                     try { clientList[receiver].GetStream().Write(bytes, 0, bytes.Length); } catch { }
-                if (clientList.ContainsKey(sender))
-                    try { clientList[sender].GetStream().Write(bytes, 0, bytes.Length); } catch { }
             }
         }
 
