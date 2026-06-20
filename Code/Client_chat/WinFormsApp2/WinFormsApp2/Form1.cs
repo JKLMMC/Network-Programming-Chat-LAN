@@ -1,5 +1,6 @@
 using System;
 using System.Windows.Forms;
+using System.Text.RegularExpressions;
 
 namespace WinFormsApp2
 {
@@ -28,6 +29,12 @@ namespace WinFormsApp2
                 return;
             }
 
+            if (!Regex.IsMatch(txtUsername.Text, @"^[a-zA-Z0-9_]{3,20}$"))
+            {
+                MessageBox.Show("Tên đăng nhập chỉ được chứa chữ cái, số, dấu gạch dưới và từ 3-20 ký tự.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             // Gửi yêu cầu đăng nhập lên Server
             if (SendAuthCommand("AUTH:" + txtUsername.Text + ":" + txtPassword.Text, out string response))
             {
@@ -50,6 +57,19 @@ namespace WinFormsApp2
             if (string.IsNullOrWhiteSpace(txtUsername.Text) || string.IsNullOrWhiteSpace(txtPassword.Text))
             {
                 MessageBox.Show("Vui lòng nhập tài khoản và mật khẩu muốn tạo vào các ô trống trước!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            if (!Regex.IsMatch(txtUsername.Text, @"^[a-zA-Z0-9_]{3,20}$"))
+            {
+                MessageBox.Show("Tên đăng nhập chỉ được chứa chữ cái, số, dấu gạch dưới và từ 3-20 ký tự.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string passPattern = @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&._\-+])[A-Za-z\d@$!%*?&._\-+]{6,}$";
+            if (!Regex.IsMatch(txtPassword.Text, passPattern))
+            {
+                MessageBox.Show("Mật khẩu phải dài ít nhất 6 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 

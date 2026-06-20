@@ -124,8 +124,8 @@ namespace Server_Chat
                     }
                     else if (data.StartsWith("TYPING:"))
                     {
-                        // Broadcasst TYPING
-                        Broadcast(data + Environment.NewLine);
+                        // Broadcast TYPING (Broadcast đã tự thêm newline, không ghép thêm nữa)
+                        Broadcast(data);
                     }
                     else if (data.StartsWith("FWD:"))
                     {
@@ -146,7 +146,8 @@ namespace Server_Chat
                         {
                             string receiver = parts[1];
                             string fileName = parts[2];
-                            string fileData = parts[3];
+                            // Lọc bỏ ký tự xuống dòng thừa trong fileData (phòng nguyần nhân desync giao thức)
+                            string fileData = parts[3].Replace("\r", "").Replace("\n", "");
 
                             if (receiver == "Tất cả")
                                 Broadcast("FILE:" + clientName + ":" + fileName + ":" + fileData);
