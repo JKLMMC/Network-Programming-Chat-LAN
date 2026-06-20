@@ -297,6 +297,7 @@ namespace WinFormsApp2
                 Color msgColor = rtxtChat.ForeColor;
                 string content = message;
 
+                // Bóc màu nếu có prefix màu #RRGGBB|
                 if (content.StartsWith("#") && content.Contains("|"))
                 {
                     int pipeIdx = content.IndexOf("|");
@@ -307,16 +308,50 @@ namespace WinFormsApp2
                     }
                 }
 
+                // --- In tên + giờ ---
                 rtxtChat.SelectionFont = new Font(rtxtChat.Font, FontStyle.Bold);
+                rtxtChat.SelectionColor = rtxtChat.ForeColor;
                 rtxtChat.AppendText($"[{DateTime.Now:HH:mm}] {sender}: ");
                 rtxtChat.SelectionFont = rtxtChat.Font;
-                
-                rtxtChat.SelectionColor = msgColor;
-                rtxtChat.AppendText($"{content}{Environment.NewLine}");
-                rtxtChat.SelectionColor = rtxtChat.ForeColor;
-                
+
+                // --- Kiểm tra có block trích dẫn [Trả lời: "..."] không ---
+                string replyPrefix = "[Trả lời: \u201c";
+                string replySuffix = "\u201d]";
+                string mainContent = content;
+
+                if (content.StartsWith(replyPrefix))
+                {
+                    int endIdx = content.IndexOf(replySuffix);
+                    if (endIdx != -1)
+                    {
+                        string quoted = content.Substring(replyPrefix.Length, endIdx - replyPrefix.Length);
+                        int afterReply = content.IndexOf("\u203a\u203a\u203a ", endIdx);
+                        mainContent = afterReply != -1 ? content.Substring(afterReply + 4) : "";
+
+                        // Vẽ block trích dẫn màu xám nghiêng
+                        rtxtChat.AppendText(Environment.NewLine);
+                        rtxtChat.SelectionFont = new Font(rtxtChat.Font, FontStyle.Italic);
+                        rtxtChat.SelectionColor = Color.FromArgb(110, 110, 130);
+                        rtxtChat.AppendText($"  \u258d \u00ab{quoted}\u00bb{Environment.NewLine}");
+                        rtxtChat.SelectionFont = rtxtChat.Font;
+                        rtxtChat.SelectionColor = rtxtChat.ForeColor;
+                    }
+                }
+
+                // --- In nội dung chính ---
+                if (!string.IsNullOrWhiteSpace(mainContent))
+                {
+                    rtxtChat.SelectionColor = msgColor;
+                    rtxtChat.AppendText($"{mainContent}{Environment.NewLine}");
+                    rtxtChat.SelectionColor = rtxtChat.ForeColor;
+                }
+                else
+                {
+                    rtxtChat.AppendText(Environment.NewLine);
+                }
+
                 rtxtChat.SelectionStart = rtxtChat.Text.Length;
-                rtxtChat.ScrollToCaret(); // Tự cuộn màn hình xuống tin nhắn mới nhất
+                rtxtChat.ScrollToCaret();
             }
         }
 

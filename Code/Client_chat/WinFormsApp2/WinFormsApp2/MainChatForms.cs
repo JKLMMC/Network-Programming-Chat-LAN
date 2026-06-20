@@ -91,20 +91,53 @@ namespace WinFormsApp2
             rtxt.ScrollToCaret();
         }
 
-        // Helper: hiển thị tin nhắn kèm tên người gửi in đậm và timestamp
+        // Helper: hiển thị tin nhắn kèm tên người gửi in đậm, timestamp, và block trích dẫn nếu có
         private void AppendChatMessage(RichTextBox rtxt, string senderName, string content, Color msgColor)
         {
-            // Tên gửi in đậm
+            // --- 1. In tên + giờ ---
             rtxt.SelectionFont = new Font(rtxt.Font, FontStyle.Bold);
             rtxt.SelectionColor = rtxt.ForeColor;
             rtxt.AppendText($"[{DateTime.Now:HH:mm}] {senderName}: ");
             rtxt.SelectionFont = rtxt.Font;
-            
-            // Nội dung tin nhắn
-            rtxt.SelectionColor = msgColor;
-            rtxt.AppendText(content + Environment.NewLine);
-            rtxt.SelectionColor = rtxt.ForeColor;
-            
+
+            // --- 2. Kiểm tra có phần trích dẫn [Trả lời: "..."] không ---
+            string replyPrefix = "[Trả lời: “";
+            string replySuffix = "”]";
+            string mainContent = content;
+
+            if (content.StartsWith(replyPrefix))
+            {
+                int endIdx = content.IndexOf(replySuffix);
+                if (endIdx != -1)
+                {
+                    // Trích lấy đoạn trích dẫn
+                    string quoted = content.Substring(replyPrefix.Length, endIdx - replyPrefix.Length);
+                    // Phần nội dung thực sự sau dấu \n›››
+                    int afterReply = content.IndexOf("››› ", endIdx);
+                    mainContent = afterReply != -1 ? content.Substring(afterReply + 4) : "";
+
+                    // Vẽ block trích dẫn (màu xám nghieng)
+                    rtxt.AppendText(Environment.NewLine);
+                    rtxt.SelectionFont = new Font(rtxt.Font, FontStyle.Italic);
+                    rtxt.SelectionColor = Color.FromArgb(110, 110, 130);
+                    rtxt.AppendText($"  ▍ «{quoted}»{Environment.NewLine}");
+                    rtxt.SelectionFont = rtxt.Font;
+                    rtxt.SelectionColor = rtxt.ForeColor;
+                }
+            }
+
+            // --- 3. In nội dung chính ---
+            if (!string.IsNullOrWhiteSpace(mainContent))
+            {
+                rtxt.SelectionColor = msgColor;
+                rtxt.AppendText(mainContent + Environment.NewLine);
+                rtxt.SelectionColor = rtxt.ForeColor;
+            }
+            else
+            {
+                rtxt.AppendText(Environment.NewLine);
+            }
+
             rtxt.SelectionStart = rtxt.Text.Length;
             rtxt.ScrollToCaret();
         }
