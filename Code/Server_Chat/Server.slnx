@@ -1,3 +1,144 @@
-<Solution>
-  <Project Path="Server/Server.csproj" />
-</Solution>
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+
+namespace ChatLANServer
+{
+    class Program
+    {
+        private static TcpListener server;
+        private static Dictionary<string, TcpClient> clients = new Dictionary<string, TcpClient>();
+
+        // CẤU HÌNH GIỚI HẠN KÝ TỰ TẠI ĐÂY
+        private const int MAX_CHAR_LIMIT = 100;
+
+        static void Main(string[] args)
+        {
+            Console.OutputEncoding = Encoding.UTF8;
+            server = new TcpListener(IPAddress.Any, 12345);
+            server.Start();
+            Console.WriteLine($"[SERVER] Đang chạy trên cổng 12345 (Giới hạn: {MAX_CHAR_LIMIT} ký tự/tin)...");
+
+            while (true)
+            {
+                TcpClient client = server.AcceptTcpClient();
+                Thread clientThread = new Thread(HandleClient);
+                clientThread.Start(client);
+            }
+        }
+
+        private static void HandleClient(object obj)
+        {
+            TcpClient client = (TcpClient)obj;
+            StreamReader reader = new StreamReader(client.GetStream(), Encoding.UTF8);
+            StreamWriter writer = new StreamWriter(client.GetStream(), Encoding.UTF8) { AutoFlush = true };
+
+            string username = "";
+            try
+            {
+                // Bước 1: Nhận username từ client khi vừa kết nối
+                username = reader.ReadLine();
+                if (string.IsNullOrEmpty(username)) return;
+
+                lock (clients)
+                {
+                    clients[username] = client;
+                }
+                Console.WriteLine($"[KẾT NỐI] {username} đã tham gia.");
+                Broadcast($"[HỆ THỐNG]: {username} đã vào phòng chat.", null);
+
+                // Bước 2: Vòng lặp nhận tin nhắn
+                string rawMessage;
+                while ((rawMessage = reader.ReadLine()) != null)
+                {
+                    if (!rawMessage.Contains(":")) continue;
+
+                    string[] parts = rawMessage.Split(new[] { ':' }, 2);
+                    string target = parts[0].Trim();
+                    string content = parts[1];
+
+                    // --- SỬA / KIỂM TRA GIỚI HẠN KÝ TỰ TRÊN SERVER ---
+                    if (content.Length > MAX_CHAR_LIMIT)
+                    {
+                        content = content.Substring(0, MAX_CHAR_LIMIT); // Cắt chuỗi nếu vượt quá
+                    }
+
+                    // Xử lý Chat Nhóm hoặc Chat Cá nhân
+                    if (target.ToUpper() == "ALL")
+                    {
+                        // Chat nhóm
+                        Broadcast($"[{username} - Nhóm]: {content}", client);
+                    }
+                    else
+                    {
+                        // Chat cá nhân (Gửi riêng)
+                        SendPrivateMessage(username, target, content, writer);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Xử lý khi ngắt kết nối đột ngột
+            }
+            finally
+            {
+                if (!string.IsNullOrEmpty(username))
+                {
+                    lock (clients)
+                    {
+                        clients.Remove(username);
+                    }
+                    Console.WriteLine($"[THOÁT] {username} đã rời đi.");
+                    Broadcast($"[HỆ THỐNG]: {username} đã rời phòng chat.", null);
+                }
+                client.Close();
+            }
+        }
+
+        // Hàm gửi cho tất cả (Chat Nhóm)
+        private static void Broadcast(string msg, TcpClient sender)
+        {
+            lock (clients)
+            {
+                foreach (var pair in clients)
+                {
+                    if (pair.Value != sender) // Không gửi ngược lại chính mình
+                    {
+                        try
+                        {
+                            StreamWriter writer = new StreamWriter(pair.Value.GetStream(), Encoding.UTF8) { AutoFlush = true };
+                            writer.WriteLine(msg);
+                        }
+                        catch { }
+                    }
+                }
+            }
+        }
+
+        // Hàm gửi riêng (Chat Cá nhân)
+        private static void SendPrivateMessage(string sender, string receiver, string msg, StreamWriter senderWriter)
+        {
+            lock (clients)
+            {
+                if (clients.ContainsKey(receiver))
+                {
+                    try
+                    {
+                        StreamWriter receiverWriter = new StreamWriter(clients[receiver].GetStream(), Encoding.UTF8) { AutoFlush = true };
+                        receiverWriter.WriteLine($"[{sender} - Riêng]: {msg}");
+                    }
+                    catch { }
+                }
+                else
+                {
+                    senderWriter.WriteLine($"[HỆ THỐNG]: Không tìm thấy người dùng '{receiver}'.");
+                }
+            }
+        }
+    }
+}
+
