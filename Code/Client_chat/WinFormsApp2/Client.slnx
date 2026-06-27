@@ -1,3 +1,91 @@
-<Solution>
-  <Project Path="Client/Client.csproj" />
-</Solution>
+using System;
+using System.IO;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+
+namespace ChatLANClient
+{
+    class Program
+    {
+        // CẤU HÌNH GIỚI HẠN KÝ TỰ ĐỒNG BỘ VỚI SERVER
+        private const int MAX_CHAR_LIMIT = 100;
+
+        static void Main(string[] args)
+        {
+            Console.OutputEncoding = Encoding.UTF8;
+            Console.InputEncoding = Encoding.UTF8;
+
+            TcpClient client = new TcpClient();
+            try
+            {
+                client.Connect("127.0.0.1", 12345); // Thay IP LAN của Server tại đây nếu test máy khác
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Không thể kết nối đến server: {ex.Message}");
+                return;
+            }
+
+            StreamWriter writer = new StreamWriter(client.GetStream(), Encoding.UTF8) { AutoFlush = true };
+
+            Console.Write("Nhập tên của bạn: ");
+            string username = Console.ReadLine();
+            writer.WriteLine(username);
+
+            // Chạy luồng nhận tin nhắn từ server một cách độc lập
+            Thread receiveThread = new Thread(() => ReceiveMessages(client));
+            receiveThread.Start();
+
+            Console.WriteLine("\n--- HƯỚNG DẪN CHAT LAN ---");
+            Console.WriteLine("- Chat nhóm: ALL:Nội dung");
+            Console.WriteLine("- Chat cá nhân: TênNgườiNhận:Nội dung");
+            Console.WriteLine($"- Giới hạn: tối đa {MAX_CHAR_LIMIT} ký tự/đoạn.");
+            Console.WriteLine("---------------------------\n");
+
+            while (true)
+            {
+                string input = Console.ReadLine();
+                if (string.IsNullOrEmpty(input)) continue;
+
+                if (input.Contains(":"))
+                {
+                    string[] parts = input.Split(new[] { ':' }, 2);
+                    string prefix = parts[0];
+                    string content = parts[1];
+
+                    // --- SỬA / KIỂM TRA GIỚI HẠN KÝ TỰ TRÊN CLIENT ---
+                    if (content.Length > MAX_CHAR_LIMIT)
+                    {
+                        Console.WriteLine($"[CẢNH BÁO]: Tin nhắn vượt giới hạn! Hệ thống tự động cắt còn {MAX_CHAR_LIMIT} ký tự.");
+                        content = content.Substring(0, MAX_CHAR_LIMIT);
+                    }
+
+                    // Gửi tin nhắn hợp lệ lên Server
+                    writer.WriteLine($"{prefix}:{content}");
+                }
+                else
+                {
+                    Console.WriteLine("[LỖI]: Sai cú pháp! Phải có dấu hai chấm ':' (Ví dụ: ALL:hello hoặc An:hello)");
+                }
+            }
+        }
+
+        private static void ReceiveMessages(TcpClient client)
+        {
+            try
+            {
+                StreamReader reader = new StreamReader(client.GetStream(), Encoding.UTF8);
+                string message;
+                while ((message = reader.ReadLine()) != null)
+                {
+                    Console.WriteLine(message);
+                }
+            }
+            catch
+            {
+                Console.WriteLine("[HỆ THỐNG]: Mất kết nối tới Server.");
+            }
+        }
+    }
+}
