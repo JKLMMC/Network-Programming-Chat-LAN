@@ -67,7 +67,7 @@
             btnReset.TabIndex = 2;
             btnReset.Text = "Đặt lại";
             btnReset.UseVisualStyleBackColor = false;
-            btnReset.Click += this.btnReset_Click;
+            btnReset.Click += btnReset_Click;
             // 
             // txtUserName
             // 
