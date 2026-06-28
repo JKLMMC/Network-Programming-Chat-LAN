@@ -26,7 +26,7 @@ namespace WinFormsApp2
             
             // Lưu tên người dùng trước khi khởi tạo UI mở rộng
             username = name;
-
+            new EmojiFeature(this);
             // Sinh Avatar tĩnh
             picAvatar.Image = GenerateAvatar(username);
             SetupTyping();
