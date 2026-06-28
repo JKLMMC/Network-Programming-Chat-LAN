@@ -32,11 +32,32 @@ namespace WinFormsApp2
             SetupTyping();
             
             txtMessage.KeyDown += txtMessage_KeyDown;
+            string[] extraEmojis = { "😢", "😆", "😲", "🙏", "🔥", "🎉", "💩", "💔" };
+    
+    int startX = 175; 
+    pnlEmoji.Width = 600; 
 
-            try {
+    foreach (string emj in extraEmojis)
+    {
+        Button btn = new Button();
+        btn.Text = emj;
+        btn.Size = new Size(30, 30);
+        btn.Location = new Point(startX, 0);
+        btn.FlatStyle = FlatStyle.Flat;
+        btn.Cursor = Cursors.Hand;
+        
+        btn.Click += btnEmoji_Click; 
+        
+        pnlEmoji.Controls.Add(btn);
+        startX += 35; 
+    }
+
+            try
+            {
                 if (System.IO.File.Exists("log.txt"))
                     rtxtChatLog.Rtf = System.IO.File.ReadAllText("log.txt");
-            } catch {}
+            }
+            catch { }
 
             // Tự động kết nối Server khi mở Form Chat (phải đợi Form Load xong để có Handle cho Invoke)
             this.Load += (s, e) => ConnectToServer();

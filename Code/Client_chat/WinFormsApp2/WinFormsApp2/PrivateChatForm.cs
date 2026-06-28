@@ -28,12 +28,33 @@ namespace WinFormsApp2
             this.AcceptButton = btnSendMsg;
             this.lblName.Text = targetUsername;
             this.picAvatar.Image = MainChatForms.GenerateAvatar(targetUsername);
+            
+            string[] extraEmojis = { "😢", "😆", "😲", "🙏", "🔥", "🎉", "💩", "💔" };
+    int startX = 175; 
+    pnlEmoji.Width = 600; 
 
-            try {
+    foreach (string emj in extraEmojis)
+    {
+        Button btn = new Button();
+        btn.Text = emj;
+        btn.Size = new Size(30, 30);
+        btn.Location = new Point(startX, 0);
+        btn.FlatStyle = FlatStyle.Flat;
+        btn.Cursor = Cursors.Hand;
+        
+        // Gắn sự kiện click có sẵn vào nút mới
+        btn.Click += btnEmoji_Click; 
+        
+        pnlEmoji.Controls.Add(btn);
+        startX += 35;
+    }
+            try
+            {
                 string logFile = $"PrivateLog_{myUsername}_{targetUsername}.txt";
                 if (System.IO.File.Exists(logFile))
                     rtxtChat.Rtf = System.IO.File.ReadAllText(logFile);
-            } catch {}
+            }
+            catch { }
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
