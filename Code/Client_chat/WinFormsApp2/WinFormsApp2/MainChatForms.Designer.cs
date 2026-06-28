@@ -143,6 +143,7 @@ namespace WinFormsApp2
             this.txtMessage.Name = "txtMessage";
             this.txtMessage.Size = new System.Drawing.Size(404, 64);
             this.txtMessage.TabIndex = 0;
+            this.txtMessage.MaxLength = 500;
             // 
             // pnlEmoji
             // 

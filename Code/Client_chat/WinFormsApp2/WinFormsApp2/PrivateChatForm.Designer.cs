@@ -66,6 +66,7 @@ namespace WinFormsApp2
             this.txtInput.Name = "txtInput";
             this.txtInput.Size = new System.Drawing.Size(230, 50);
             this.txtInput.TabIndex = 1;
+            this.txtInput.MaxLength = 500;
             this.txtInput.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtInput_KeyDown);
             // 
             // btnSendFile

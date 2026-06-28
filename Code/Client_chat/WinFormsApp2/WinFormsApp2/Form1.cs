@@ -87,6 +87,27 @@ namespace WinFormsApp2
             }
         }
 
+        private void lnkForgot_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtUsername.Text) || string.IsNullOrWhiteSpace(txtPassword.Text))
+            {
+                MessageBox.Show("Vui lòng nhập tài khoản và mật khẩu mới vào các ô trống trước để đặt lại mật khẩu!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            if (SendAuthCommand("FORGOT:" + txtUsername.Text + ":" + txtPassword.Text, out string response))
+            {
+                if (response == "FORGOT_OK")
+                {
+                    MessageBox.Show("Đặt lại mật khẩu thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else if (response.StartsWith("FORGOT_FAIL:"))
+                {
+                    MessageBox.Show(response.Substring(12), "Thất bại", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
         private bool SendAuthCommand(string command, out string response)
         {
             response = "";

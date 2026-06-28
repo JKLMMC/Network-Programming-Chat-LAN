@@ -135,6 +135,7 @@ namespace WinFormsApp2
             lnkForgot.TabStop = true;
             lnkForgot.Text = "Quên mật khẩu?";
             lnkForgot.VisitedLinkColor = Color.FromArgb(0, 120, 212);
+            lnkForgot.LinkClicked += new LinkLabelLinkClickedEventHandler(((LoginForm)this).lnkForgot_LinkClicked);
             // 
             // pnlBackground
             // 
