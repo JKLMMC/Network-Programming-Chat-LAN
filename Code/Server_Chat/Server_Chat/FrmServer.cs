@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -104,7 +105,7 @@ namespace Server_Chat
         private void HandleClient(object obj)
         {
             TcpClient client = (TcpClient)obj;
-            string clientName = ""; 
+            string clientName = "";
             NetworkStream stream = client.GetStream();
             System.IO.StreamReader reader = new System.IO.StreamReader(stream, Encoding.UTF8);
             System.IO.StreamWriter writer = new System.IO.StreamWriter(stream, Encoding.UTF8) { AutoFlush = true };
@@ -157,17 +158,42 @@ namespace Server_Chat
                     }
                     else if (data.StartsWith("LOGIN:"))
                     {
-                        clientName = data.Substring(6); 
+                        clientName = data.Substring(6);
                         lock (lockObj)
                         {
-                            clientList[clientName] = client; 
+                            clientList[clientName] = client;
                         }
                         UpdateUserListUI();
-                        UpdateUserList(); 
+                        UpdateUserList();
+                        
+                        // Push own avatar to all (including self just in case)
+                        string myAvatar = GetAvatarFromDB(clientName);
+                        if (!string.IsNullOrEmpty(myAvatar))
+                        {
+                            Broadcast("AVATAR:" + clientName + ":" + myAvatar);
+                        }
+
+                        // Send all other users' avatars to THIS client
+                        lock (lockObj)
+                        {
+                            foreach (string otherUser in clientList.Keys)
+                            {
+                                if (otherUser != clientName)
+                                {
+                                    string otherAvatar = GetAvatarFromDB(otherUser);
+                                    if (!string.IsNullOrEmpty(otherAvatar))
+                                    {
+                                        try {
+                                            writer.WriteLine("AVATAR:" + otherUser + ":" + otherAvatar);
+                                        } catch { }
+                                    }
+                                }
+                            }
+                        }
                     }
                     else if (data.StartsWith("CHAT:"))
                     {
-                        string message = data.Substring(5); 
+                        string message = data.Substring(5);
                         Broadcast("CHAT:" + clientName + ": " + message);
                         Log($"[Public] {clientName}: {message}");
                     }
@@ -210,6 +236,17 @@ namespace Server_Chat
                             Log($"[File] {clientName} -> {receiver}: {fileName}");
                         }
                     }
+                    else if (data.StartsWith("AVATAR:"))
+                    {
+                        string[] parts = data.Split(new char[] { ':' }, 3);
+                        if (parts.Length == 3)
+                        {
+                            string user = parts[1];
+                            string b64 = parts[2];
+                            SaveAvatarToDB(user, b64);
+                            Broadcast(data); // Send to all clients
+                        }
+                    }
                 }
             }
             catch { }
@@ -219,10 +256,10 @@ namespace Server_Chat
                 {
                     lock (lockObj)
                     {
-                        clientList.Remove(clientName); 
+                        clientList.Remove(clientName);
                     }
                     UpdateUserListUI();
-                    UpdateUserList(); 
+                    UpdateUserList();
                     Log($"User {clientName} đã ngắt kết nối.");
                 }
                 client.Close();
@@ -245,9 +282,56 @@ namespace Server_Chat
                     {
                         cmd.ExecuteNonQuery();
                     }
+                    try
+                    {
+                        using (SqliteCommand cmd = new SqliteCommand("ALTER TABLE Users ADD COLUMN Avatar TEXT", conn))
+                        {
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+                    catch { } // Bỏ qua nếu cột đã tồn tại
                 }
             }
             catch { }
+        }
+
+        private void SaveAvatarToDB(string username, string base64)
+        {
+            try
+            {
+                using (SqliteConnection conn = new SqliteConnection("Data Source=Chat.db;"))
+                {
+                    conn.Open();
+                    string sql = "UPDATE Users SET Avatar=@a WHERE Username=@u";
+                    using (SqliteCommand cmd = new SqliteCommand(sql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@a", base64);
+                        cmd.Parameters.AddWithValue("@u", username);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private string GetAvatarFromDB(string username)
+        {
+            try
+            {
+                using (SqliteConnection conn = new SqliteConnection("Data Source=Chat.db;"))
+                {
+                    conn.Open();
+                    string sql = "SELECT Avatar FROM Users WHERE Username=@u";
+                    using (SqliteCommand cmd = new SqliteCommand(sql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@u", username);
+                        var result = cmd.ExecuteScalar();
+                        if (result != null && result != DBNull.Value) return result.ToString();
+                    }
+                }
+            }
+            catch { }
+            return null;
         }
 
         private bool CheckLogin(string username, string password)
@@ -286,7 +370,7 @@ namespace Server_Chat
                     }
                 }
             }
-            catch { return false; } 
+            catch { return false; }
         }
 
         private bool ResetPassword(string username, string newPassword)
@@ -366,7 +450,7 @@ namespace Server_Chat
         {
             string formattedMsg = "PRIVATE_CHAT:" + sender + ":" + msg + Environment.NewLine;
             byte[] bytes = Encoding.UTF8.GetBytes(formattedMsg);
-            
+
             lock (lockObj)
             {
                 if (clientList.ContainsKey(receiver))
@@ -378,7 +462,7 @@ namespace Server_Chat
         {
             string formattedMsg = "FILE:" + sender + ":" + fileName + ":" + fileData + Environment.NewLine;
             byte[] bytes = Encoding.UTF8.GetBytes(formattedMsg);
-            
+
             lock (lockObj)
             {
                 if (clientList.ContainsKey(receiver))
@@ -386,6 +470,11 @@ namespace Server_Chat
                 if (clientList.ContainsKey(sender))
                     try { clientList[sender].GetStream().Write(bytes, 0, bytes.Length); } catch { }
             }
+        }
+
+        private void lblOnline_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

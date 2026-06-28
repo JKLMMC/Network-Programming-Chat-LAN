@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -18,25 +19,38 @@ namespace WinFormsApp2
         private System.IO.StreamWriter writer;
         private System.Collections.Generic.Dictionary<string, PrivateChatForm> privateChats = new System.Collections.Generic.Dictionary<string, PrivateChatForm>();
 
+        public static System.Collections.Generic.Dictionary<string, Image> CustomAvatars = new System.Collections.Generic.Dictionary<string, Image>();
+
+        public static Image GetAvatar(string name)
+        {
+            if (CustomAvatars.ContainsKey(name)) return CustomAvatars[name];
+            return GenerateAvatar(name);
+        }
+
         private string username;
 
         public MainChatForms(string name)
         {
             InitializeComponent();
-            
+
             // Lưu tên người dùng trước khi khởi tạo UI mở rộng
             username = name;
 
-            // Sinh Avatar tĩnh
-            picAvatar.Image = GenerateAvatar(username);
+            // Sinh Avatar tĩnh hoặc lấy custom
+            picAvatar.Image = GetAvatar(username);
+            picAvatar.Cursor = Cursors.Hand;
+            picAvatar.Click += PicAvatar_Click;
             SetupTyping();
-            
+            SetupHoverMenu();
+
             txtMessage.KeyDown += txtMessage_KeyDown;
 
-            try {
+            try
+            {
                 if (System.IO.File.Exists("log.txt"))
                     rtxtChatLog.Rtf = System.IO.File.ReadAllText("log.txt");
-            } catch {}
+            }
+            catch { }
 
             // Tự động kết nối Server khi mở Form Chat (phải đợi Form Load xong để có Handle cho Invoke)
             this.Load += (s, e) => ConnectToServer();
@@ -45,13 +59,220 @@ namespace WinFormsApp2
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             base.OnFormClosing(e);
-            try {
+            try
+            {
                 System.IO.File.WriteAllText("log.txt", rtxtChatLog.Rtf);
-            } catch {}
+            }
+            catch { }
         }
 
         private string currentColorHex = "";
         private System.Windows.Forms.Timer typingTimer = new System.Windows.Forms.Timer { Interval = 2000 };
+
+        private Panel pnlHoverMenu;
+        private string hoveredMessageText = "";
+        private int lastHoverLine = -1;
+
+        private void SetupHoverMenu()
+        {
+            pnlHoverMenu = new Panel();
+            pnlHoverMenu.Size = new Size(70, 30);
+            pnlHoverMenu.BackColor = Color.FromArgb(245, 245, 245);
+            pnlHoverMenu.Visible = false;
+
+            Button btnHoverReply = new Button();
+            btnHoverReply.Text = "↩️";
+            btnHoverReply.Size = new Size(30, 26);
+            btnHoverReply.Location = new Point(2, 2);
+            btnHoverReply.Cursor = Cursors.Hand;
+            btnHoverReply.FlatStyle = FlatStyle.Flat;
+            btnHoverReply.FlatAppearance.BorderSize = 0;
+            btnHoverReply.Click += BtnHoverReply_Click;
+            new ToolTip().SetToolTip(btnHoverReply, "Trả lời tin nhắn này");
+
+            Button btnHoverFwd = new Button();
+            btnHoverFwd.Text = "⏩";
+            btnHoverFwd.Size = new Size(30, 26);
+            btnHoverFwd.Location = new Point(36, 2);
+            btnHoverFwd.Cursor = Cursors.Hand;
+            btnHoverFwd.FlatStyle = FlatStyle.Flat;
+            btnHoverFwd.FlatAppearance.BorderSize = 0;
+            btnHoverFwd.Click += BtnHoverFwd_Click;
+            new ToolTip().SetToolTip(btnHoverFwd, "Chuyển tiếp tin nhắn này");
+
+            pnlHoverMenu.Controls.Add(btnHoverReply);
+            pnlHoverMenu.Controls.Add(btnHoverFwd);
+            rtxtChatLog.Controls.Add(pnlHoverMenu);
+
+            rtxtChatLog.MouseMove += RtxtChatLog_MouseMove;
+            rtxtChatLog.MouseLeave += RtxtChatLog_MouseLeave;
+            pnlHoverMenu.MouseLeave += (s, ev) =>
+            {
+                Point mousePos = rtxtChatLog.PointToClient(Cursor.Position);
+                if (!rtxtChatLog.ClientRectangle.Contains(mousePos))
+                {
+                    pnlHoverMenu.Visible = false;
+                }
+            };
+        }
+
+        private void RtxtChatLog_MouseMove(object sender, MouseEventArgs e)
+        {
+            try
+            {
+                RichTextBox rtxt = (RichTextBox)sender;
+                if (rtxt.TextLength == 0) return;
+
+                int charIndex = rtxt.GetCharIndexFromPosition(e.Location);
+
+                // Nếu chuột nằm quá dòng cuối cùng, ẩn menu
+                Point lastCharPt = rtxt.GetPositionFromCharIndex(rtxt.TextLength - 1);
+                if (e.Y > lastCharPt.Y + rtxt.Font.Height)
+                {
+                    pnlHoverMenu.Visible = false;
+                    hoveredMessageText = "";
+                    return;
+                }
+
+                string allText = rtxt.Text;
+                System.Text.RegularExpressions.MatchCollection matches = System.Text.RegularExpressions.Regex.Matches(allText, @"^\[\d{2}:\d{2}\]", System.Text.RegularExpressions.RegexOptions.Multiline);
+
+                System.Text.RegularExpressions.Match currentMessageMatch = null;
+                System.Text.RegularExpressions.Match nextMessageMatch = null;
+
+                for (int i = 0; i < matches.Count; i++)
+                {
+                    if (matches[i].Index <= charIndex)
+                    {
+                        currentMessageMatch = matches[i];
+                        if (i + 1 < matches.Count)
+                            nextMessageMatch = matches[i + 1];
+                        else
+                            nextMessageMatch = null;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                if (currentMessageMatch != null)
+                {
+                    int start = currentMessageMatch.Index;
+                    int end = nextMessageMatch != null ? nextMessageMatch.Index : allText.Length;
+                    string fullMsg = allText.Substring(start, end - start).Trim();
+
+                    // Chỉ update và show lại nếu nội dung thay đổi hoặc menu đang bị ẩn
+                    if (hoveredMessageText != fullMsg || !pnlHoverMenu.Visible)
+                    {
+                        hoveredMessageText = fullMsg;
+                        Point startPt = rtxt.GetPositionFromCharIndex(start);
+
+                        int menuY = startPt.Y;
+                        if (menuY < 0) menuY = 0; // Fix lỗi bị che khi cuộn lên trên
+
+                        pnlHoverMenu.Location = new Point(rtxt.ClientSize.Width - pnlHoverMenu.Width - 10, menuY);
+                        pnlHoverMenu.Visible = true;
+                        pnlHoverMenu.BringToFront();
+                    }
+                }
+                else
+                {
+                    pnlHoverMenu.Visible = false;
+                    hoveredMessageText = "";
+                }
+            }
+            catch { pnlHoverMenu.Visible = false; }
+        }
+
+        private void RtxtChatLog_MouseLeave(object sender, EventArgs e)
+        {
+            Point mousePos = rtxtChatLog.PointToClient(Cursor.Position);
+            if (!pnlHoverMenu.Bounds.Contains(mousePos))
+            {
+                pnlHoverMenu.Visible = false;
+                hoveredMessageText = "";
+            }
+        }
+
+        private void BtnHoverReply_Click(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(hoveredMessageText))
+            {
+                string quotedText = hoveredMessageText;
+                if (quotedText.Length > 100) quotedText = quotedText.Substring(0, 100) + "...";
+                txtMessage.Text = $"[Trả lời: “{quotedText}”]\n››› ";
+                txtMessage.SelectionStart = txtMessage.Text.Length;
+                txtMessage.Focus();
+                pnlHoverMenu.Visible = false;
+            }
+        }
+
+        private void BtnHoverFwd_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(hoveredMessageText)) return;
+            string oldMsg = hoveredMessageText;
+            if (oldMsg.Length > 200) oldMsg = oldMsg.Substring(0, 200) + "...";
+
+            var onlineUsers = new System.Collections.Generic.List<string>();
+            foreach (var item in lstOnlineUsers.Items)
+            {
+                string name = item.ToString().Replace(" (new)", "");
+                if (name != "Tất cả" && name != username)
+                    onlineUsers.Add(name);
+            }
+
+            if (onlineUsers.Count == 0)
+            {
+                MessageBox.Show("Không có người dùng nào đang online để chuyển tiếp!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            Form fwdForm = new Form
+            {
+                Text = "📤 Chuyển tiếp tin nhắn",
+                Size = new Size(420, 260),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false,
+                MinimizeBox = false,
+                BackColor = Color.FromArgb(245, 247, 250),
+                Font = new Font("Segoe UI", 10)
+            };
+
+            Label lblPreview = new Label { Text = $"\"{oldMsg}\"", Location = new Point(15, 15), Size = new Size(380, 60), ForeColor = Color.FromArgb(80, 80, 80), Font = new Font("Segoe UI", 9, FontStyle.Italic), AutoEllipsis = true };
+            Label lblChoose = new Label { Text = "Chọn người nhận:", Location = new Point(15, 85), AutoSize = true, ForeColor = Color.FromArgb(50, 50, 50), Font = new Font("Segoe UI", 10, FontStyle.Bold) };
+            ComboBox cbUsers = new ComboBox { Location = new Point(15, 110), Width = 375, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10), BackColor = Color.White };
+            foreach (string u in onlineUsers) cbUsers.Items.Add(u);
+            cbUsers.SelectedIndex = 0;
+
+            Button btnSendFwd = new Button { Text = "  Gửi ngay →", Location = new Point(235, 160), Size = new Size(155, 40), BackColor = Color.FromArgb(37, 99, 235), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10, FontStyle.Bold), Cursor = Cursors.Hand };
+            btnSendFwd.FlatAppearance.BorderSize = 0;
+            Button btnCancel = new Button { Text = "Hủy", Location = new Point(145, 160), Size = new Size(80, 40), BackColor = Color.FromArgb(220, 220, 225), ForeColor = Color.FromArgb(50, 50, 50), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10), Cursor = Cursors.Hand };
+            btnCancel.FlatAppearance.BorderSize = 0;
+            btnCancel.Click += (s, ev) => fwdForm.Close();
+
+            btnSendFwd.Click += (s, ev) =>
+            {
+                if (cbUsers.SelectedItem != null && writer != null)
+                {
+                    string target = cbUsers.SelectedItem.ToString();
+                    writer.WriteLine($"FWD:{target}:{oldMsg.Replace("\r", "").Replace("\n", "<br>")}");
+                    rtxtChatLog.SelectionFont = new Font(rtxtChatLog.Font, FontStyle.Italic);
+                    rtxtChatLog.SelectionColor = Color.FromArgb(120, 120, 120);
+                    rtxtChatLog.AppendText($"  📤 Bạn đã chuyển tiếp tin nhắn đến {target}{Environment.NewLine}");
+                    rtxtChatLog.SelectionFont = rtxtChatLog.Font;
+                    rtxtChatLog.SelectionColor = rtxtChatLog.ForeColor;
+                    rtxtChatLog.SelectionStart = rtxtChatLog.Text.Length;
+                    rtxtChatLog.ScrollToCaret();
+                    fwdForm.Close();
+                }
+            };
+
+            fwdForm.Controls.AddRange(new Control[] { lblPreview, lblChoose, cbUsers, btnCancel, btnSendFwd });
+            fwdForm.ShowDialog(this);
+            pnlHoverMenu.Visible = false;
+        }
 
         private void txtMessage_KeyDown(object sender, KeyEventArgs e)
         {
@@ -75,7 +296,8 @@ namespace WinFormsApp2
             rtxt.AppendText($"[{DateTime.Now:HH:mm}] {senderName}: gửi ảnh [{fileName}]{Environment.NewLine}");
             rtxt.SelectionFont = rtxt.Font;
 
-            try {
+            try
+            {
                 IDataObject oldData = Clipboard.GetDataObject();
                 Clipboard.SetImage(img);
                 rtxt.ReadOnly = false;
@@ -83,10 +305,12 @@ namespace WinFormsApp2
                 rtxt.ReadOnly = true;
                 rtxt.AppendText(Environment.NewLine);
                 if (oldData != null) Clipboard.SetDataObject(oldData);
-            } catch {
+            }
+            catch
+            {
                 rtxt.AppendText("[Không thể hiển thị ảnh trực tiếp]" + Environment.NewLine);
             }
-            
+
             rtxt.SelectionStart = rtxt.Text.Length;
             rtxt.ScrollToCaret();
         }
@@ -142,6 +366,46 @@ namespace WinFormsApp2
             rtxt.ScrollToCaret();
         }
 
+        private void PicAvatar_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog ofd = new OpenFileDialog())
+            {
+                ofd.Title = "Chọn ảnh đại diện mới";
+                ofd.Filter = "Image Files|*.jpg;*.jpeg;*.png;*.gif";
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        Image original = Image.FromFile(ofd.FileName);
+                        Bitmap compressed = new Bitmap(100, 100);
+                        using (Graphics g = Graphics.FromImage(compressed))
+                        {
+                            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                            g.DrawImage(original, 0, 0, 100, 100);
+                        }
+                        
+                        picAvatar.Image = compressed;
+                        CustomAvatars[username] = compressed;
+
+                        using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+                        {
+                            compressed.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
+                            byte[] bytes = ms.ToArray();
+                            string b64 = Convert.ToBase64String(bytes, Base64FormattingOptions.None);
+                            if (writer != null)
+                            {
+                                writer.WriteLine("AVATAR:" + username + ":" + b64);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Lỗi chọn ảnh: " + ex.Message);
+                    }
+                }
+            }
+        }
+
         private void btnEmoji_Click(object sender, EventArgs e)
         {
             Button btn = sender as Button;
@@ -155,7 +419,8 @@ namespace WinFormsApp2
 
         private void btnColor_Click(object sender, EventArgs e)
         {
-            if (sharedColorDialog.ShowDialog() == DialogResult.OK) {
+            if (sharedColorDialog.ShowDialog() == DialogResult.OK)
+            {
                 currentColorHex = "#" + sharedColorDialog.Color.R.ToString("X2") + sharedColorDialog.Color.G.ToString("X2") + sharedColorDialog.Color.B.ToString("X2");
                 btnColor.BackColor = sharedColorDialog.Color;
             }
@@ -179,12 +444,15 @@ namespace WinFormsApp2
 
         private void SetupTyping()
         {
-            txtMessage.TextChanged += (s, e) => {
-                if (writer != null && !string.IsNullOrEmpty(txtMessage.Text)) {
-                    try { writer.WriteLine("TYPING:" + username); } catch {}
+            txtMessage.TextChanged += (s, e) =>
+            {
+                if (writer != null && !string.IsNullOrEmpty(txtMessage.Text))
+                {
+                    try { writer.WriteLine("TYPING:" + username); } catch { }
                 }
             };
-            typingTimer.Tick += (s, e) => {
+            typingTimer.Tick += (s, e) =>
+            {
                 lblTyping.Visible = false;
                 typingTimer.Stop();
             };
@@ -305,7 +573,7 @@ namespace WinFormsApp2
                 if (cbUsers.SelectedItem != null && writer != null)
                 {
                     string target = cbUsers.SelectedItem.ToString();
-                    writer.WriteLine($"FWD:{target}:{oldMsg}");
+                    writer.WriteLine($"FWD:{target}:{oldMsg.Replace("\r", "").Replace("\n", "<br>")}");
 
                     // Hiển thông báo đẹp trong khung chat
                     rtxtChatLog.SelectionFont = new Font(rtxtChatLog.Font, FontStyle.Italic);
@@ -361,11 +629,13 @@ namespace WinFormsApp2
                             this.Invoke(new Action(() =>
                             {
                                 string selected = lstOnlineUsers.SelectedItem?.ToString();
-                                
+
                                 // Bảo tồn trạng thái (new)
                                 System.Collections.Generic.List<string> newUsers = new System.Collections.Generic.List<string>();
-                                foreach (var item in lstOnlineUsers.Items) {
-                                    if (item.ToString().EndsWith(" (new)")) {
+                                foreach (var item in lstOnlineUsers.Items)
+                                {
+                                    if (item.ToString().EndsWith(" (new)"))
+                                    {
                                         newUsers.Add(item.ToString().Replace(" (new)", ""));
                                     }
                                 }
@@ -373,7 +643,7 @@ namespace WinFormsApp2
                                 lstOnlineUsers.Items.Clear();
                                 string allItem = newUsers.Contains("Tất cả") ? "Tất cả (new)" : "Tất cả";
                                 lstOnlineUsers.Items.Add(allItem);
-                                
+
                                 foreach (string u in users)
                                 {
                                     if (!string.IsNullOrEmpty(u) && u != username) // Không tự hiện mình
@@ -383,23 +653,27 @@ namespace WinFormsApp2
                                     }
                                 }
 
-                                if (!string.IsNullOrEmpty(selected)) {
+                                if (!string.IsNullOrEmpty(selected))
+                                {
                                     int idx = lstOnlineUsers.FindStringExact(selected);
                                     if (idx != -1) lstOnlineUsers.SelectedIndex = idx;
                                     else lstOnlineUsers.SelectedIndex = 0;
-                                } else {
+                                }
+                                else
+                                {
                                     lstOnlineUsers.SelectedIndex = 0;
                                 }
                             }));
                         }
                         else if (message.StartsWith("CHAT:"))
                         {
-                            string chatMsg = message.Substring(5);
+                            string chatMsg = message.Substring(5).Replace("<br>", "\n");
                             this.Invoke(new Action(() =>
                             {
                                 Color msgColor = rtxtChatLog.ForeColor;
                                 int splitIdx = chatMsg.IndexOf(": ");
-                                if (splitIdx != -1) {
+                                if (splitIdx != -1)
+                                {
                                     string content = chatMsg.Substring(splitIdx + 2);
                                     string senderNameOnly = chatMsg.Substring(0, splitIdx);
 
@@ -412,19 +686,21 @@ namespace WinFormsApp2
                                             if (allIdx != -1) lstOnlineUsers.Items[allIdx] = "Tất cả (new)";
                                         }
                                     }
-                                    
+
                                     if (content.StartsWith("#") && content.Contains("|"))
                                     {
                                         int pipeIdx = content.IndexOf("|");
                                         string hex = content.Substring(0, pipeIdx);
-                                        if (hex.Length == 7) {
-                                            try { msgColor = ColorTranslator.FromHtml(hex); } catch {}
+                                        if (hex.Length == 7)
+                                        {
+                                            try { msgColor = ColorTranslator.FromHtml(hex); } catch { }
                                             content = content.Substring(pipeIdx + 1);
                                         }
                                     }
                                     AppendChatMessage(rtxtChatLog, senderNameOnly, content, msgColor);
                                 }
-                                else {
+                                else
+                                {
                                     rtxtChatLog.AppendText($"[{DateTime.Now:HH:mm}] " + chatMsg + Environment.NewLine);
                                 }
                             }));
@@ -434,7 +710,8 @@ namespace WinFormsApp2
                             string typer = message.Substring(7);
                             if (typer != username)
                             {
-                                this.Invoke(new Action(() => {
+                                this.Invoke(new Action(() =>
+                                {
                                     lblTyping.Text = typer + " đang gõ...";
                                     lblTyping.Visible = true;
                                     typingTimer.Stop();
@@ -448,7 +725,7 @@ namespace WinFormsApp2
                             if (parts.Length == 3)
                             {
                                 string senderName = parts[1];
-                                string msg = parts[2];
+                                string msg = parts[2].Replace("<br>", "\n");
                                 this.Invoke(new Action(() =>
                                 {
                                     if (!privateChats.ContainsKey(senderName) || privateChats[senderName].IsDisposed)
@@ -487,7 +764,8 @@ namespace WinFormsApp2
 
                                     if (isImage)
                                     {
-                                        try {
+                                        try
+                                        {
                                             byte[] fileBytes = Convert.FromBase64String(fileData);
                                             using (System.IO.MemoryStream ms = new System.IO.MemoryStream(fileBytes))
                                             {
@@ -501,7 +779,8 @@ namespace WinFormsApp2
                                                     InsertImageIntoRichTextBox(rtxtChatLog, senderName, img, fileName);
                                                 }
                                             }
-                                        } catch {}
+                                        }
+                                        catch { }
                                     }
                                     else
                                     {
@@ -509,7 +788,7 @@ namespace WinFormsApp2
                                         {
                                             privateChats[senderName].AppendMessage(senderName, $"[Đã gửi file: {fileName}]");
                                         }
-                                        else 
+                                        else
                                         {
                                             rtxtChatLog.SelectionColor = Color.Green;
                                             rtxtChatLog.AppendText($"[{senderName} đã gửi file: {fileName}]\n");
@@ -532,6 +811,37 @@ namespace WinFormsApp2
                                         }
                                     }
                                 }));
+                            }
+                        }
+                        else if (message.StartsWith("AVATAR:"))
+                        {
+                            string[] parts = message.Split(new char[] { ':' }, 3);
+                            if (parts.Length == 3)
+                            {
+                                string uName = parts[1];
+                                string b64 = parts[2];
+                                try
+                                {
+                                    byte[] bytes = Convert.FromBase64String(b64);
+                                    using (System.IO.MemoryStream ms = new System.IO.MemoryStream(bytes))
+                                    {
+                                        Image img = Image.FromStream(ms);
+                                        CustomAvatars[uName] = img;
+                                        
+                                        this.Invoke(new Action(() =>
+                                        {
+                                            if (uName == username)
+                                            {
+                                                picAvatar.Image = img;
+                                            }
+                                            if (privateChats.ContainsKey(uName) && !privateChats[uName].IsDisposed)
+                                            {
+                                                privateChats[uName].UpdateAvatar();
+                                            }
+                                        }));
+                                    }
+                                }
+                                catch { }
                             }
                         }
                     }
@@ -565,6 +875,7 @@ namespace WinFormsApp2
                 if (msgText.Length > 500) msgText = msgText.Substring(0, 500);
 
                 msgText = FilterProfanity(msgText);
+                msgText = msgText.Replace("\r", "").Replace("\n", "<br>");
 
                 if (!string.IsNullOrEmpty(currentColorHex))
                 {
@@ -654,7 +965,7 @@ namespace WinFormsApp2
             {
                 string rawTarget = lstOnlineUsers.SelectedItem.ToString();
                 string target = rawTarget.Replace(" (new)", "");
-                
+
                 // Cập nhật lại list box để bỏ (new)
                 if (rawTarget != target)
                 {
@@ -686,6 +997,11 @@ namespace WinFormsApp2
         }
 
         private void lstOnlineUsers_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void rtxtChatLog_TextChanged(object sender, EventArgs e)
         {
 
         }

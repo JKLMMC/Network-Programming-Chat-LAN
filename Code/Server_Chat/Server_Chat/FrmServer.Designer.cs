@@ -35,10 +35,6 @@
             lblOnline = new Label();
             lblLog = new Label();
             rtbLog = new RichTextBox();
-            btnKich = new Button();
-            btnLock = new Button();
-            btnUnlock = new Button();
-            btnDelete = new Button();
             SuspendLayout();
             // 
             // label1
@@ -87,17 +83,18 @@
             // 
             lblOnline.AutoSize = true;
             lblOnline.Font = new Font("Segoe UI", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            lblOnline.Location = new Point(72, 198);
+            lblOnline.Location = new Point(76, 151);
             lblOnline.Name = "lblOnline";
             lblOnline.Size = new Size(162, 23);
             lblOnline.TabIndex = 4;
             lblOnline.Text = "Người dùng online";
+            lblOnline.Click += lblOnline_Click;
             // 
             // lblLog
             // 
             lblLog.AutoSize = true;
             lblLog.Font = new Font("Segoe UI", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            lblLog.Location = new Point(515, 198);
+            lblLog.Location = new Point(549, 151);
             lblLog.Name = "lblLog";
             lblLog.Size = new Size(130, 23);
             lblLog.TabIndex = 5;
@@ -112,55 +109,11 @@
             rtbLog.TabIndex = 6;
             rtbLog.Text = "";
             // 
-            // btnKich
-            // 
-            btnKich.Font = new Font("Segoe UI", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            btnKich.Location = new Point(105, 428);
-            btnKich.Name = "btnKich";
-            btnKich.Size = new Size(101, 29);
-            btnKich.TabIndex = 7;
-            btnKich.Text = "Kich Users";
-            btnKich.UseVisualStyleBackColor = true;
-            // 
-            // btnLock
-            // 
-            btnLock.Font = new Font("Segoe UI", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            btnLock.Location = new Point(268, 428);
-            btnLock.Name = "btnLock";
-            btnLock.Size = new Size(141, 29);
-            btnLock.TabIndex = 8;
-            btnLock.Text = "Khóa tài khoản";
-            btnLock.UseVisualStyleBackColor = true;
-            // 
-            // btnUnlock
-            // 
-            btnUnlock.Font = new Font("Segoe UI", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            btnUnlock.Location = new Point(463, 428);
-            btnUnlock.Name = "btnUnlock";
-            btnUnlock.Size = new Size(140, 29);
-            btnUnlock.TabIndex = 9;
-            btnUnlock.Text = "Mở tài khoản";
-            btnUnlock.UseVisualStyleBackColor = true;
-            // 
-            // btnDelete
-            // 
-            btnDelete.Font = new Font("Segoe UI", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            btnDelete.Location = new Point(654, 428);
-            btnDelete.Name = "btnDelete";
-            btnDelete.Size = new Size(134, 29);
-            btnDelete.TabIndex = 10;
-            btnDelete.Text = "Xóa tài khoản";
-            btnDelete.UseVisualStyleBackColor = true;
-            // 
             // FrmServer
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(882, 553);
-            Controls.Add(btnDelete);
-            Controls.Add(btnUnlock);
-            Controls.Add(btnLock);
-            Controls.Add(btnKich);
+            ClientSize = new Size(881, 451);
             Controls.Add(lblLog);
             Controls.Add(lblOnline);
             Controls.Add(btnStop);
@@ -187,9 +140,5 @@
         private Label lblOnline;
         private Label lblLog;
         private RichTextBox rtbLog;
-        private Button btnKich;
-        private Button btnLock;
-        private Button btnUnlock;
-        private Button btnDelete;
     }
 }
