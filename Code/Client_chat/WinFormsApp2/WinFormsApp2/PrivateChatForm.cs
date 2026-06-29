@@ -212,6 +212,7 @@ namespace WinFormsApp2
                 {
                     string target = cbUsers.SelectedItem.ToString();
                     writer.WriteLine($"FWD:{target}:{oldMsg.Replace("\r", "").Replace("\n", "<br>")}");
+                    MainChatForms.Instance?.UpdateTargetPrivateChatForForwarding(target, oldMsg);
                     rtxtChat.SelectionFont = new Font(rtxtChat.Font, FontStyle.Italic);
                     rtxtChat.SelectionColor = Color.FromArgb(120, 120, 120);
                     rtxtChat.AppendText($"  📤 Bạn đã chuyển tiếp đến {target}{Environment.NewLine}");
@@ -242,7 +243,7 @@ namespace WinFormsApp2
             {
                 string logFile = $"PrivateLog_{myUsername}_{targetUsername}.txt";
                 if (System.IO.File.Exists(logFile))
-                    rtxtChat.Rtf = System.IO.File.ReadAllText(logFile);
+                    rtxtChat.LoadFile(logFile, RichTextBoxStreamType.RichText);
             }
             catch { }
         }
@@ -252,7 +253,7 @@ namespace WinFormsApp2
             base.OnFormClosing(e);
             try
             {
-                System.IO.File.WriteAllText($"PrivateLog_{myUsername}_{targetUsername}.txt", rtxtChat.Rtf);
+                rtxtChat.SaveFile($"PrivateLog_{myUsername}_{targetUsername}.txt", RichTextBoxStreamType.RichText);
             }
             catch { }
         }
@@ -394,6 +395,7 @@ namespace WinFormsApp2
                 {
                     string target = cbUsers.SelectedItem.ToString();
                     writer.WriteLine($"FWD:{target}:{oldMsg.Replace("\r", "").Replace("\n", "<br>")}");
+                    MainChatForms.Instance?.UpdateTargetPrivateChatForForwarding(target, oldMsg);
 
                     rtxtChat.SelectionFont = new Font(rtxtChat.Font, FontStyle.Italic);
                     rtxtChat.SelectionColor = Color.FromArgb(120, 120, 120);
@@ -495,12 +497,27 @@ namespace WinFormsApp2
                         // Gửi file bằng lệnh FILE qua server
                         writer.WriteLine("FILE:" + targetUsername + ":" + fileName + ":" + base64File);
 
-                        // Báo lên khung chat riêng
-                        rtxtChat.SelectionColor = Color.Green;
-                        rtxtChat.AppendText($"[Bạn đã gửi file: {fileName}]\n");
-                        rtxtChat.SelectionColor = rtxtChat.ForeColor;
-                        rtxtChat.SelectionStart = rtxtChat.Text.Length;
-                        rtxtChat.ScrollToCaret();
+                        if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif")
+                        {
+                            try
+                            {
+                                using (System.IO.MemoryStream ms = new System.IO.MemoryStream(fileBytes))
+                                {
+                                    Image img = Image.FromStream(ms);
+                                    InsertImage("Tôi", img, fileName);
+                                }
+                            }
+                            catch { }
+                        }
+                        else
+                        {
+                            // Báo lên khung chat riêng
+                            rtxtChat.SelectionColor = Color.Green;
+                            rtxtChat.AppendText($"[Bạn đã gửi file: {fileName}]\n");
+                            rtxtChat.SelectionColor = rtxtChat.ForeColor;
+                            rtxtChat.SelectionStart = rtxtChat.Text.Length;
+                            rtxtChat.ScrollToCaret();
+                        }
                     }
                 }
             }

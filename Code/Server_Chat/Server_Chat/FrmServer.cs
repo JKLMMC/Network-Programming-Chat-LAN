@@ -460,15 +460,13 @@ namespace Server_Chat
 
         private void SendPrivateFile(string sender, string receiver, string fileName, string fileData)
         {
-            string formattedMsg = "FILE:" + sender + ":" + fileName + ":" + fileData + Environment.NewLine;
+            string formattedMsg = "PRIVATE_FILE:" + sender + ":" + fileName + ":" + fileData + Environment.NewLine;
             byte[] bytes = Encoding.UTF8.GetBytes(formattedMsg);
 
             lock (lockObj)
             {
                 if (clientList.ContainsKey(receiver))
                     try { clientList[receiver].GetStream().Write(bytes, 0, bytes.Length); } catch { }
-                if (clientList.ContainsKey(sender))
-                    try { clientList[sender].GetStream().Write(bytes, 0, bytes.Length); } catch { }
             }
         }
 

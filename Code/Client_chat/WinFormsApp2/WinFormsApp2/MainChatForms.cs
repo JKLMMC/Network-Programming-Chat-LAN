@@ -29,8 +29,11 @@ namespace WinFormsApp2
 
         private string username;
 
+        public static MainChatForms Instance;
+
         public MainChatForms(string name)
         {
+            Instance = this;
             InitializeComponent();
 
             // Lưu tên người dùng trước khi khởi tạo UI mở rộng
@@ -48,7 +51,7 @@ namespace WinFormsApp2
             try
             {
                 if (System.IO.File.Exists("log.txt"))
-                    rtxtChatLog.Rtf = System.IO.File.ReadAllText("log.txt");
+                    rtxtChatLog.LoadFile("log.txt", RichTextBoxStreamType.RichText);
             }
             catch { }
 
@@ -61,7 +64,7 @@ namespace WinFormsApp2
             base.OnFormClosing(e);
             try
             {
-                System.IO.File.WriteAllText("log.txt", rtxtChatLog.Rtf);
+                rtxtChatLog.SaveFile("log.txt", RichTextBoxStreamType.RichText);
             }
             catch { }
         }
@@ -575,6 +578,8 @@ namespace WinFormsApp2
                     string target = cbUsers.SelectedItem.ToString();
                     writer.WriteLine($"FWD:{target}:{oldMsg.Replace("\r", "").Replace("\n", "<br>")}");
 
+                    UpdateTargetPrivateChatForForwarding(target, oldMsg);
+
                     // Hiển thông báo đẹp trong khung chat
                     rtxtChatLog.SelectionFont = new Font(rtxtChatLog.Font, FontStyle.Italic);
                     rtxtChatLog.SelectionColor = Color.FromArgb(120, 120, 120);
@@ -590,6 +595,22 @@ namespace WinFormsApp2
 
             fwdForm.Controls.AddRange(new Control[] { lblPreview, lblChoose, cbUsers, btnCancel, btnSendFwd });
             fwdForm.ShowDialog(this);
+        }
+
+        public void UpdateTargetPrivateChatForForwarding(string target, string oldMsg)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() => UpdateTargetPrivateChatForForwarding(target, oldMsg)));
+                return;
+            }
+            if (!privateChats.ContainsKey(target) || privateChats[target].IsDisposed)
+            {
+                PrivateChatForm pcf = new PrivateChatForm(username, target, writer);
+                pcf.OnlineUsersList = lstOnlineUsers;
+                privateChats[target] = pcf;
+            }
+            privateChats[target].AppendMessage("Tôi", $"[Chuyển tiếp] {oldMsg.Replace("\r", "").Replace("\n", " ")}");
         }
 
         private void ConnectToServer()
@@ -746,9 +767,10 @@ namespace WinFormsApp2
                                 }));
                             }
                         }
-                        else if (message.StartsWith("FILE:"))
+                        else if (message.StartsWith("FILE:") || message.StartsWith("PRIVATE_FILE:"))
                         {
-                            // Cú pháp từ server: FILE:Sender:FileName:Base64
+                            bool isPrivate = message.StartsWith("PRIVATE_FILE:");
+                            // Cú pháp từ server: FILE:Sender:FileName:Base64 hoặc PRIVATE_FILE:Sender:FileName:Base64
                             string[] parts = message.Split(new char[] { ':' }, 4);
                             if (parts.Length == 4)
                             {
@@ -770,8 +792,14 @@ namespace WinFormsApp2
                                             using (System.IO.MemoryStream ms = new System.IO.MemoryStream(fileBytes))
                                             {
                                                 Image img = Image.FromStream(ms);
-                                                if (privateChats.ContainsKey(senderName) && !privateChats[senderName].IsDisposed)
+                                                if (isPrivate)
                                                 {
+                                                    if (!privateChats.ContainsKey(senderName) || privateChats[senderName].IsDisposed)
+                                                    {
+                                                        PrivateChatForm pcf = new PrivateChatForm(username, senderName, writer);
+                                                        pcf.OnlineUsersList = lstOnlineUsers;
+                                                        privateChats[senderName] = pcf;
+                                                    }
                                                     privateChats[senderName].InsertImage(senderName, img, fileName);
                                                 }
                                                 else
@@ -784,8 +812,14 @@ namespace WinFormsApp2
                                     }
                                     else
                                     {
-                                        if (privateChats.ContainsKey(senderName) && !privateChats[senderName].IsDisposed)
+                                        if (isPrivate)
                                         {
+                                            if (!privateChats.ContainsKey(senderName) || privateChats[senderName].IsDisposed)
+                                            {
+                                                PrivateChatForm pcf = new PrivateChatForm(username, senderName, writer);
+                                                pcf.OnlineUsersList = lstOnlineUsers;
+                                                privateChats[senderName] = pcf;
+                                            }
                                             privateChats[senderName].AppendMessage(senderName, $"[Đã gửi file: {fileName}]");
                                         }
                                         else
@@ -947,9 +981,54 @@ namespace WinFormsApp2
                         string target = "Tất cả";
                         if (lstOnlineUsers.SelectedItem != null) target = lstOnlineUsers.SelectedItem.ToString().Replace(" (new)", "");
                         writer.WriteLine("FILE:" + target + ":" + fileName + ":" + base64File);
-                        rtxtChatLog.SelectionFont = new Font(rtxtChatLog.Font, FontStyle.Bold);
-                        rtxtChatLog.AppendText($"[{DateTime.Now:HH:mm}] Bạn: gửi file [{fileName}]{Environment.NewLine}");
-                        rtxtChatLog.SelectionFont = rtxtChatLog.Font;
+
+                        if (target == "Tất cả")
+                        {
+                            if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif")
+                            {
+                                try
+                                {
+                                    using (System.IO.MemoryStream ms = new System.IO.MemoryStream(fileBytes))
+                                    {
+                                        Image img = Image.FromStream(ms);
+                                        InsertImageIntoRichTextBox(rtxtChatLog, "Bạn", img, fileName);
+                                    }
+                                }
+                                catch { }
+                            }
+                            else
+                            {
+                                rtxtChatLog.SelectionFont = new Font(rtxtChatLog.Font, FontStyle.Bold);
+                                rtxtChatLog.AppendText($"[{DateTime.Now:HH:mm}] Bạn: gửi file [{fileName}]{Environment.NewLine}");
+                                rtxtChatLog.SelectionFont = rtxtChatLog.Font;
+                            }
+                        }
+                        else
+                        {
+                            if (!privateChats.ContainsKey(target) || privateChats[target].IsDisposed)
+                            {
+                                PrivateChatForm pcf = new PrivateChatForm(username, target, writer);
+                                pcf.OnlineUsersList = lstOnlineUsers;
+                                privateChats[target] = pcf;
+                                // Không tự động show
+                            }
+                            if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif")
+                            {
+                                try
+                                {
+                                    using (System.IO.MemoryStream ms = new System.IO.MemoryStream(fileBytes))
+                                    {
+                                        Image img = Image.FromStream(ms);
+                                        privateChats[target].InsertImage("Tôi", img, fileName);
+                                    }
+                                }
+                                catch { }
+                            }
+                            else
+                            {
+                                privateChats[target].AppendMessage("Tôi", $"[Bạn đã gửi file: {fileName}]");
+                            }
+                        }
                     }
                 }
             }
